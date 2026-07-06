@@ -25,21 +25,26 @@ check_web() {
 
 check_extension() {
   if [ ! -d extension ]; then echo "   (extension/ chua ton tai — skip)"; return; fi
-  step "EXTENSION: build dev + prod"
+  step "EXTENSION: build PROD (= artifact ship)"
   ( cd extension
     [ -f package.json ] || { echo "   (extension/package.json thieu — skip)"; exit 0; }
-    npm run --silent build || node build.mjs || { echo "   [FAIL] extension build"; exit 1; }
+    # Build PROD: minified, khong sourcemap/.map, khong comment → khop cai thuc su ship.
+    npm run --silent build:prod || node build.mjs --prod || { echo "   [FAIL] extension prod build"; exit 1; }
   ) || FAIL=1
 }
 
-# P0 invariant: dist extension KHONG duoc lo secret.
+# P0 invariant: dist extension (artifact SHIP) KHONG duoc lo secret.
+# Scan file ship (.js/.json/.html), BO QUA *.map (chi co o dev build, khong ship) de tranh
+# false-positive tu comment/source-map. Bat gia tri secret THAT + tu khoa tripwire.
 check_secret() {
-  step "SECRET LEAK: grep extension/dist"
+  step "SECRET LEAK: grep extension/dist (bo qua *.map)"
   if [ ! -d extension/dist ]; then echo "   (extension/dist chua co — skip)"; return; fi
-  if grep -RniE 'service_role|OPENAI_API_KEY|sk-[A-Za-z0-9]{20}' extension/dist 2>/dev/null; then
+  if grep -RniE --include='*.js' --include='*.json' --include='*.html' \
+       'service_role|OPENAI_API_KEY|sk-[A-Za-z0-9]{20}|-----BEGIN [A-Z ]*PRIVATE KEY' \
+       extension/dist 2>/dev/null; then
     echo "   [FAIL] SECRET tim thay trong dist — KHONG duoc ship"; FAIL=1
   else
-    echo "   OK: 0 secret trong dist"
+    echo "   OK: 0 secret trong dist (artifact ship)"
   fi
 }
 
