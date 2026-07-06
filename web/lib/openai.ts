@@ -27,6 +27,10 @@ export async function lookupWord(
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey || !apiKey.trim()) return null;
 
+  // Timeout cứng: nếu OpenAI treo/stall (half-open, quá tải) → abort → throw → null → fallback.
+  // Không có cái này, fetch hang tới khi platform cắt → 5xx, vỡ invariant "không bao giờ 500".
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 12_000);
   try {
     const res = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
@@ -44,6 +48,7 @@ export async function lookupWord(
           { role: "user", content: JSON.stringify({ word, sentence }) },
         ],
       }),
+      signal: controller.signal,
     });
     if (!res.ok) return null;
     const data = await res.json();
@@ -52,6 +57,8 @@ export async function lookupWord(
     return normalize(content);
   } catch {
     return null;
+  } finally {
+    clearTimeout(timeout);
   }
 }
 

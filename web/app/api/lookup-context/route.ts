@@ -7,6 +7,9 @@ import { corsHeaders } from "@/lib/cors";
 // POST /api/lookup-context (Blueprint §5).
 // Verify user trước (401). Thao tác cache + OpenAI bằng service_role (cache dùng chung).
 // KHÔNG BAO GIỜ 500 vì AI/mạng → fallback source:"error".
+
+// Backstop tầng platform: giới hạn thời gian hàm (lookupWord đã tự abort ở 12s).
+export const maxDuration = 20;
 const FALLBACK = {
   lemma: null,
   article: null,

@@ -41,6 +41,7 @@
   - `./init.sh web` VERIFY OK; `./init.sh secret` = 0 secret.
 - **Chờ Homeowner:** điền `OPENAI_API_KEY` → verify `source:"cache"`/`source:"openai"` (gọi AI thật). Fallback đã xong.
 - Deviations: mark-learned dùng `new Date().toISOString()` (giờ server) thay `now()` DB — supabase-js không set now() trực tiếp; kết quả tương đương.
+- **VERIFY (Chủ thầu, adversarial-verify 15 agent):** 13/14 ok. 1 finding (confidence low, tự judge vì 1 agent chết auth): `lookupWord` fetch **không timeout** → nếu OpenAI treo → hang → platform 5xx, vỡ invariant "không 500". **Đã vá:** AbortController 12s + `maxDuration=20` cho route. Re-verify runtime: lookup fallback vẫn **200 source:error** (không 500). Fix sync vào harness-kit template.
 
 ### 2026-07-06 — F03 Web auth (DONE, code-complete) [Chủ thầu giao TIP → Thợ làm]
 - TIP: `.claude/tips/TIP-F03-web-auth.md`. Chốt kiến trúc: session localStorage (không cookie/SSR) + API Bearer JWT stateless.
