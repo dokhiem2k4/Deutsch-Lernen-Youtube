@@ -9,8 +9,11 @@ export const meta = {
 // Only for genuinely independent leaves (e.g. F05 pages: tu-vung / flashcard / quiz / dashboard;
 // or F04 separate routes). The coordinator reviews + merges worktrees afterward.
 //   Workflow({ name:'parallel-build', args:{ featureId, tasks:[{ id, spec, files:[...] }] } })
-const featureId = (args && args.featureId) || 'UNKNOWN'
-const tasks = (args && args.tasks) || []
+const A = (typeof args === 'string'
+  ? (() => { try { return JSON.parse(args) } catch { return {} } })()
+  : args) || {}
+const featureId = A.featureId || 'UNKNOWN'
+const tasks = A.tasks || []
 if (!tasks.length) { log('No tasks in args.tasks.'); return { featureId, results: [] } }
 
 const SUMMARY = {

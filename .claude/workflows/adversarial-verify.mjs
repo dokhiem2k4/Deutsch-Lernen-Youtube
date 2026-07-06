@@ -10,11 +10,15 @@ export const meta = {
 // Workflow scripts have NO filesystem access. The coordinator must pass the
 // feature's criteria via args (read feature_list.json first, then invoke):
 //   Workflow({ name:'adversarial-verify', args:{ featureId, criteria:[...], context, securityChecks:[...] } })
-const featureId = (args && args.featureId) || 'UNKNOWN'
-const criteria = (args && args.criteria) || []
-const context = (args && args.context) ||
+// args có thể tới dạng object HOẶC chuỗi JSON tuỳ runtime → parse cho chắc.
+const A = (typeof args === 'string'
+  ? (() => { try { return JSON.parse(args) } catch { return {} } })()
+  : args) || {}
+const featureId = A.featureId || 'UNKNOWN'
+const criteria = A.criteria || []
+const context = A.context ||
   'See CLAUDE.md (invariants), feature_list.json (done_when), .claude/workflow/security.md, and the Blueprint in docs/superpowers/specs/.'
-const securityChecks = (args && args.securityChecks) || []
+const securityChecks = A.securityChecks || []
 
 if (!criteria.length && !securityChecks.length) {
   log('No criteria/securityChecks in args — nothing to verify.')
