@@ -57,7 +57,7 @@
       "name": "API core (vocabulary + lookup-context AI + dashboard)",
       "description": "Route Handlers: vocabulary CRUD idempotent, mark-learned, lookup-context (cache -> gpt-4o-mini -> cache, fallback khong 500), dashboard RPC, health, CORS reflect origin.",
       "dependencies": ["F03"],
-      "status": "pending",
+      "status": "done",
       "scope": ["GET/POST/DELETE /api/vocabulary (idempotent UNIQUE)", "POST /api/vocabulary/mark-learned", "POST /api/lookup-context", "GET /api/dashboard (RPC)", "GET /api/health public", "CORS reflect origin + chrome-extension"],
       "done_when": [
         "moi route bao ve -> 401 khi thieu token (test)",

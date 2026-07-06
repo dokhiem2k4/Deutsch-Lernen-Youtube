@@ -9,11 +9,12 @@
 
 ## Đang ở đâu (restart markers)
 - **Last Updated:** 2026-07-06.
-- **Current Objective / Feature active:** F04 — API core (vocabulary + lookup-context AI + dashboard). F01+F02+F03 DONE.
-- **Recommended Next Step:** F04 — `/api/vocabulary` (GET/POST/DELETE, idempotent UNIQUE), `/api/vocabulary/mark-learned`, `/api/lookup-context` (cache→gpt-4o-mini, fallback không 500), `/api/dashboard` (RPC get_dashboard). **Tái dùng** `getUserFromRequest` + `corsHeaders` (đã có từ F03). Có TIP mẫu ở `.claude/tips/`.
+- **Current Objective / Feature active:** F05 — Web pages (tu-vung/flashcard/quiz/dashboard). F01+F02+F03+F04 DONE.
+- **Recommended Next Step:** F05 — `/tu-vung` (list + xoá + trạng thái Từ mới/Đã học), `/hoc-tu-vung` flashcard (lật thẻ → mark-learned), quiz 2 chiều `/kiem-tra-duc-viet` + `/kiem-tra-viet-duc` (`QuizGame` prop direction, <4 từ chặn có thông báo, ≥4 → 4 đáp án 1 đúng), `/dashboard` streak+chart 30 ngày, components Header/QuizGame/ui/*. **Gọi API F04 qua `lib/apiClient.ts`** (đã kèm Bearer JWT). Có TIP mẫu ở `.claude/tips/` (chờ Chủ thầu giao TIP-F05).
+- **API F04 sẵn dùng cho F05:** `GET/POST/DELETE /api/vocabulary`, `POST /api/vocabulary/mark-learned {ids}`, `POST /api/lookup-context {word,sentence}`, `GET /api/dashboard`. Tất cả cần Bearer JWT.
 - **Blockers:**
-  - **`OPENAI_API_KEY` trống** → cần cho `/api/lookup-context`. Điền vào `.env` + `web/.env.local`. (Không có key vẫn code + test fallback được.)
-  - **Google OAuth** chưa bật → để verify login thật + /api/me path 200 (Homeowner, redirect `https://ealcahjaftwrllbudkyr.supabase.co/auth/v1/callback`).
+  - **`OPENAI_API_KEY` trống** → `/api/lookup-context` path gọi AI thật (`source:"cache"`/`"openai"`) chờ Homeowner điền key. Fallback `source:"error"` đã verify không 500 → F05 code được (không chặn).
+  - **Google OAuth** chưa bật → verify login thật + path token-hợp-lệ end-to-end (Homeowner, redirect `https://ealcahjaftwrllbudkyr.supabase.co/auth/v1/callback`). Test authed đang dùng user tạo qua service_role.
 - **Supabase:** project `ealcahjaftwrllbudkyr` live. `.env`/`web/.env.local` có creds. MCP đang **không** `--read-only`; PAT nên rotate (đã lộ trong chat).
 - **Files:** `web/` (Next 15 + auth F03), `extension/` (MV3 scaffold), `supabase/migrations/` (3 .sql applied). `node_modules/` cài rồi.
 
