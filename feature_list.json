@@ -116,7 +116,7 @@
       "name": "Extension click-word (lookup AI + save + settings)",
       "description": "Click tu Duc -> pause -> lookup-context qua background -> popup nghia (lemma+article) + Luu + loa de-DE; settings phu de chrome.storage ap realtime.",
       "dependencies": ["F07"],
-      "status": "pending",
+      "status": "done",
       "scope": ["click tu -> pause -> SM_API POST /api/lookup-context", "popup: lemma+article+meaning_vi + Luu (example=cau) + loa speechSynthesis de-DE", "click ngoai -> play", "settings {showDe,showVi,bgEnabled,bgOpacity,fontSizePx} realtime"],
       "done_when": [
         "click tu -> nghia AI dung ngu canh -> Luu -> web /tu-vung thay tu",

@@ -4,13 +4,13 @@
 
 ## Current State
 - **Last Updated:** 2026-07-06.
-- **Phase:** BUILD. F01–F07 **done** → active `F08` (extension click-từ) — feature cuối trước F09 SHIP.
-- **Current Objective / Active feature:** `F08 — Extension click-word (lookup AI + save + settings)`.
-- **What đã build:** F01–F05 (web MVP) + F06 (extension scaffold) + **Extension subtitles (F07)**: `lib/captions.ts` (parseJson3/pickCue/isAntiBot/buildUrl — pure, unit-tested), `content/yt-intercept.ts` (MAIN world document_start: patch fetch+XHR bắt timedtext đã ký → refetch DE+VI → postMessage, không chặn gốc), `content/youtube.ts` (ISOLATED: overlay 2 dòng #movie_player sync currentTime, ẩn caption gốc CSS, chỉ tin source:'DL'). manifest +yt-intercept world:MAIN.
-- **Blockers:**
-  - **Google OAuth** chưa bật (Homeowner: Blueprint §10.2, redirect `https://ealcahjaftwrllbudkyr.supabase.co/auth/v1/callback`) → login thật để verify auth-bridge + smoke test F05 browser + F08 click-lưu end-to-end.
-  - **`OPENAI_API_KEY` trống** → **cần cho F08 click-từ** (`/api/lookup-context` gọi AI thật). Fallback không 500 đã verify — F08 code + test fallback được, nghĩa thật chờ key.
-- **Recommended Next Step:** F08 — click từ Đức trong overlay → `video.pause()` → `smApi("POST","/api/lookup-context",{word,sentence})` qua background → popup nghĩa (lemma+article) + Lưu (`POST /api/vocabulary`, example=câu) + loa `speechSynthesis` de-DE; click ngoài → play; settings `{showDe,showVi,bgEnabled,bgOpacity,fontSizePx}` `chrome.storage.local` realtime. Chờ Chủ thầu giao TIP-F08.
+- **Phase:** BUILD **hoàn tất** (F01–F08 done) → active `F09` (SHIP + verify tổng + handover). Toàn bộ feature code-complete.
+- **Current Objective / Active feature:** `F09 — SHIP + verify tổng + handover (README/Diataxis, adversarial verify toàn bộ, MONITOR)`.
+- **What đã build:** F01–F05 (web MVP) + F06 (extension scaffold) + F07 (subtitles overlay) + **Click-word (F08)**: `lib/words.ts` (tokenize/cleanWord pure), `lib/settings.ts` (DEFAULT/get/set/clamp/onChanged), `lib/speak.ts` (speakDe de-DE); `content/youtube.ts` mở rộng — từ DE click được → pause + thẻ nghĩa in-page (lookup qua SM_API + Lưu + loa), click ngoài/Đóng → play (chỉ nếu ta pause), settings realtime; popup thêm "Cài đặt phụ đề" (toggle DE/VI, slider cỡ chữ/độ đậm).
+- **Blockers (đều là runtime cần Homeowner — không chặn code):**
+  - **Google OAuth** chưa bật → login thật để verify end-to-end: F03 login, F05 pages browser, F06 auth-bridge, F08 click→lưu.
+  - **`OPENAI_API_KEY` trống** → F08 nghĩa AI thật (`source:cache/openai`). Fallback (source:error, không 500) đã verify — click chưa login/lỗi không vỡ.
+- **Recommended Next Step:** F09 — README (setup Supabase/OAuth/OpenAI + apply migration + build web/extension + load unpacked), handover Diataxis, map mọi REQ Blueprint → feature + verified, SHIP gate (`./init.sh all` xanh + 0 secret), MONITOR. Nhiều phần "verified" cần Homeowner chạy flow thật (§9 Blueprint).
 
 ## Feature board (nguồn: feature_list.json)
 | ID | Feature | Deps | Status |
@@ -22,10 +22,21 @@
 | F05 | Web pages (tu-vung/flashcard/quiz/dashboard) | F04 | done ✓ (browser end-to-end chờ Homeowner OAuth) |
 | F06 | Extension scaffold (MV3 + auth-bridge + popup) | F04 | done ✓ (login thật chờ Homeowner OAuth) |
 | F07 | Extension subtitles (intercept + overlay) | F06 | done ✓ (overlay runtime chờ Homeowner video Đức) |
-| F08 | Extension click-word (lookup + save + settings) | F07 | pending ◀ active |
-| F09 | SHIP + verify tổng + handover | F05,F08 | pending |
+| F08 | Extension click-word (lookup + save + settings) | F07 | done ✓ (click/settings runtime chờ Homeowner OAuth+OPENAI) |
+| F09 | SHIP + verify tổng + handover | F05,F08 | pending ◀ active |
 
 ## Nhật ký (mới nhất trên cùng)
+### 2026-07-06 — F08 Click-word + settings (DONE, logic) [Chủ thầu giao TIP → Thợ làm]
+- TIP: `.claude/tips/TIP-F08-click-word.md`. Kiến trúc chốt: thẻ nghĩa **in-page** (youtube.ts render trong #movie_player, KHÔNG action-popup); lookup qua **SM_API** (không gọi API trực tiếp); pause khi click từ, play khi đóng/click-ngoài **chỉ nếu ta chủ động pause**; settings `chrome.storage.local` realtime; render as text.
+- Files (extension): `src/lib/words.ts` (MỚI, pure: tokenize/cleanWord giữ ä/ö/ü/ß), `src/lib/settings.ts` (MỚI: DEFAULT/get/set/clampSettings/onSettingsChanged, key dl-settings), `src/lib/speak.ts` (MỚI: speakDe de-DE guard), `src/content/youtube.ts` (MỞ RỘNG F07: span từ click được → pause + thẻ lookup+Lưu+loa, click ngoài→play, settings realtime CSS var; giữ nguyên overlay-core/intercept F07), `src/popup/popup.ts`+`.html` (MỞ RỘNG F06: khu Cài đặt phụ đề). **Không** đổi manifest/build.mjs (lib import, không phải content-script mới).
+- **Bằng chứng (unit-test REAL source qua esbuild bundle; build/secret; SM_API contract live):**
+  - `words.ts` + `settings.ts` **17/17 unit PASS**: tokenize ("Das Haus, ist groß!"→clean Haus/groß, giữ ß, geht's, ''→[]); clampSettings (fontSizePx 99→32, 5→12; bgOpacity 200→100, -5→0; thiếu→default; kiểu sai→default); getSettings storage trống→DEFAULT; setSettings persist+clamp+merge.
+  - `typecheck` xanh; `build --prod` xanh (youtube.js 9.1kb); `./init.sh extension` **0 secret**.
+  - Render as text: **0 `.innerHTML`/`outerHTML`/`document.write`** (chỉ createElement/textContent). youtube.ts **không fetch trực tiếp** (chỉ smApi).
+  - **SM_API contract (proxyFetch replica, user test service_role, web :3000):** lookup-context (OPENAI trống)→**200 source:error meaning_vi=""** (thẻ "Không tra được"); token sai→**401** (thẻ "Đăng nhập để tra"); Lưu payload đầy đủ {word,lemma,article,meaning_vi,example}→**200** (article=das, example set); web /tu-vung thấy; re-save trùng→same row (idempotent).
+- **Chờ Homeowner (runtime end-to-end):** OAuth + OPENAI + video Đức → click từ→pause→thẻ nghĩa thật→Lưu→web /tu-vung→loa de-DE→đóng→play; toggle/slider popup→overlay đổi realtime + persist reload.
+- **Deviations:** (1) "click ngoài→play" dùng `document pointerdown` capture khi thẻ mở + phát hiện video `play` gián tiếp — align với YouTube (state đang pause, cả hai đều muốn play → không xung đột). (2) Thẻ nghĩa in-page tự tô màu article (der/die/das) inline (không import lib web). (3) Loa phát ngay khi click từ (trước cả lookup) cho phản hồi nhanh.
+
 ### 2026-07-06 — F07 Extension subtitles (DONE, logic) [Chủ thầu giao TIP → Thợ làm]
 - TIP: `.claude/tips/TIP-F07-extension-subtitles.md`. Kiến trúc chốt: hook fetch/XHR ở MAIN world bắt URL timedtext **đã ký** player tự gọi → refetch DE (fmt=json3) + VI (tlang=vi) từ chính baseUrl (không tự dựng URL → né anti-bot); MAIN→ISOLATED qua `window.postMessage`; overlay + currentTime ở ISOLATED.
 - Files (extension): `src/lib/captions.ts` (MỚI, pure: parseJson3/pickCue/isAntiBot/buildUrl), `src/content/yt-intercept.ts` (MỚI, MAIN/document_start: patch fetch+XHR, anti-bot VI retry 1 lần → blocked, không chặn request gốc), `src/content/youtube.ts` (THAY stub, ISOLATED: overlay 2 dòng #movie_player, pickCue theo currentTime, ẩn caption gốc bằng CSS, reset khi SPA đổi video), `manifest.json` (+yt-intercept `world:"MAIN"` document_start), `build.mjs` (+entry yt-intercept).
@@ -117,6 +128,25 @@
 - Bằng chứng: N/A (chưa có code để verify).
 
 ## Verification Evidence (command and output — dán vào đây khi có)
+### F08 — unit (words+settings) + build/secret + SM_API contract (2026-07-06)
+```
+esbuild bundle words.ts + settings.ts → node → 17 passed, 0 failed:
+  tokenize "Das Haus, ist groß!" → 4 tok, clean Haus/groß (giữ ß), «Übung»→Übung, geht's→geht's, ''→[]
+  clampSettings fontSizePx 99→32 / 5→12; bgOpacity 200→100 / -5→0; {}→DEFAULT; showDe='x'→true
+  getSettings empty→DEFAULT; setSettings persist(fontSizePx 40→32) + showVi=false + others default
+
+typecheck xanh; build --prod (youtube.js 9.1kb, popup.js 2.9kb); ./init.sh extension → 0 secret
+render as text: 0 .innerHTML/outerHTML/document.write; youtube.ts không fetch trực tiếp (chỉ smApi)
+
+SM_API contract (proxyFetch replica, user test service_role, web :3000):
+  lookup-context {word,sentence} OPENAI trống -> ok=true 200 source=error meaning_vi="" (KHÔNG 500)
+  lookup-context token sai                     -> ok=false 401 (thẻ "Đăng nhập để tra nghĩa")
+  vocabulary save {word,lemma,article,meaning_vi,example} -> 200 article=das example set
+  GET vocabulary -> Haus present, article+example set (web /tu-vung đọc cùng)
+  re-save dup    -> 200 same row, meaning_vi giữ "ngôi nhà" (idempotent)
+  [AI meaning thật source cache/openai -> chờ Homeowner OPENAI]
+```
+
 ### F07 — unit-test captions.ts + build/secret (2026-07-06)
 ```
 esbuild bundle src/lib/captions.ts → node → 20 passed, 0 failed:
