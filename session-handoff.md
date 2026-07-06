@@ -9,10 +9,11 @@
 
 ## Đang ở đâu (restart markers)
 - **Last Updated:** 2026-07-06.
-- **Current Objective / Feature active:** F06 — Extension scaffold (MV3 + auth-bridge + popup). F01–F05 DONE (web MVP code-complete).
-- **Recommended Next Step:** F06 — extension MV3: `manifest.json`, `background/service-worker` (SM_API proxy tới `/api/*`), `content/auth-bridge` (đọc session localStorage web — key `sb-<ref>-auth-token`), popup login/mở web/đăng xuất, lib chỉ chứa **anon key + URL** (KHÔNG service_role/OPENAI). `./init.sh extension` xanh + grep dist **0 secret**. Bắt lỗi "Extension context invalidated" (stop poll). Chờ Chủ thầu giao TIP-F06.
-- **F05 web đã xong (dùng để verify cùng extension):** `/tu-vung`, `/hoc-tu-vung`, `/kiem-tra-{duc-viet,viet-duc}`, `/dashboard`. Session lưu localStorage (`supabaseClient` persistSession) → auth-bridge F06 đọc được.
-- **API F04/F05 sẵn:** `GET/POST/DELETE /api/vocabulary`, `POST /api/vocabulary/mark-learned {ids}`, `POST /api/lookup-context {word,sentence}`, `GET /api/dashboard`. Bearer JWT. CORS đã phản chiếu `chrome-extension://`.
+- **Current Objective / Feature active:** F07 — Extension subtitles (intercept timedtext + overlay DE+VI). F01–F06 DONE.
+- **Recommended Next Step:** F07 — `src/content/yt-intercept.ts` (MAIN world, `document_start`, hook fetch/XHR bắt URL `timedtext` **đã ký** player tự gọi: DE `fmt=json3` + VI cùng baseUrl `&tlang=vi`), xử lý anti-bot "Sorry/automated" → retry 1 lần + phân biệt trạng thái VI (ok/blocked/empty), postMessage cues → `youtube.ts`. Bỏ stub `youtube.ts` (ISOLATED): overlay 2 dòng trong `#movie_player` chọn cue theo currentTime + ẩn caption gốc. Cần thêm entry `yt-intercept` vào build.mjs + manifest (world:MAIN, run_at document_start). Chờ Chủ thầu giao TIP-F07.
+- **Extension F06 nền tảng cho F07/F08:** content gọi API qua `smApi(method,path,body)` (`src/lib/apiExt.ts`) → background SM_API proxy (Bearer + refresh). Session do auth-bridge forward. F08 click-từ sẽ dùng `smApi("POST","/api/lookup-context",{word,sentence})` + `smApi("POST","/api/vocabulary",...)`.
+- **Web F05 sẵn để verify cùng extension:** `/tu-vung`, `/hoc-tu-vung`, `/kiem-tra-{duc-viet,viet-duc}`, `/dashboard`. Session localStorage key `sb-ealcahjaftwrllbudkyr-auth-token`.
+- **API sẵn:** `GET/POST/DELETE /api/vocabulary`, `POST /api/vocabulary/mark-learned {ids}`, `POST /api/lookup-context {word,sentence}`, `GET /api/dashboard`. Bearer JWT. CORS phản chiếu `chrome-extension://`.
 - **Blockers:**
   - **`OPENAI_API_KEY` trống** → `/api/lookup-context` path gọi AI thật chờ Homeowner. Fallback không 500 đã verify. Cần cho F08 click-từ.
   - **Google OAuth** chưa bật → smoke test browser end-to-end F05 (login → list/flashcard/quiz/dashboard) + auth-bridge F06 cần login thật. Test authed hiện dùng user tạo qua service_role.

@@ -4,13 +4,13 @@
 
 ## Current State
 - **Last Updated:** 2026-07-06.
-- **Phase:** BUILD. F01–F05 **done** → active `F06` (extension). Web MVP code-complete.
-- **Current Objective / Active feature:** `F06 — Extension scaffold (MV3 + auth-bridge + popup)`.
-- **What đã build:** scaffold (F01) + Supabase DB (F02) + Web auth (F03) + API core (F04) + **Web pages (F05)**: `/tu-vung` (list+xoá+Badge trạng thái), `/hoc-tu-vung` (flashcard lật + loa de-DE + mark-learned), `/kiem-tra-duc-viet` + `/kiem-tra-viet-duc` (`QuizGame` direction, <4 chặn), `/dashboard` (streak+3 stat+chart 30 ngày div thuần) + shared `lib/article`, `components/ui/{Button,Card,Badge,Spinner}`, `components/Header`.
+- **Phase:** BUILD. F01–F06 **done** → active `F07` (extension subtitles).
+- **Current Objective / Active feature:** `F07 — Extension subtitles (intercept timedtext + overlay DE+VI)`.
+- **What đã build:** F01–F05 (web MVP) + **Extension scaffold (F06)**: manifest MV3 (quyền tối thiểu `storage`, host cụ thể APP_URL+youtube, **không `<all_urls>`**), `background/service-worker` (SM_API proxy Bearer + 401→refresh→retry, SM_SESSION/SM_LOGOUT), `content/auth-bridge` (đọc session localStorage web → forward, guard context-invalidated), popup (email/login/logout), lib `env`/`supabaseExt`/`apiExt` (chỉ anon+URL). `youtube.ts` giữ stub.
 - **Blockers:**
-  - **Google OAuth** chưa bật (Homeowner: Blueprint §10.2, redirect `https://ealcahjaftwrllbudkyr.supabase.co/auth/v1/callback`) → cần để verify login thật + smoke test F05 trong browser (list/flashcard/quiz/dashboard end-to-end).
-  - **`OPENAI_API_KEY` trống** → F04 path gọi AI thật chờ Homeowner. Không chặn F05/F06.
-- **Recommended Next Step:** F06 — extension MV3: `manifest.json`, `background/service-worker` (SM_API proxy), `content/auth-bridge` (đọc session localStorage web), popup login/logout, lib chỉ chứa anon key. `./init.sh extension` + grep 0 secret. Chờ Chủ thầu giao TIP-F06.
+  - **Google OAuth** chưa bật (Homeowner: Blueprint §10.2, redirect `https://ealcahjaftwrllbudkyr.supabase.co/auth/v1/callback`) → cần login thật để verify auth-bridge + smoke test F05 browser end-to-end.
+  - **`OPENAI_API_KEY` trống** → F04 AI-call path chờ Homeowner (cần cho F08 click-từ). Không chặn F07.
+- **Recommended Next Step:** F07 — `yt-intercept.ts` (MAIN world, hook fetch/XHR bắt `timedtext` đã ký: DE json3 + VI `&tlang=vi`), anti-bot "Sorry" retry 1 lần, `youtube.ts` (ISOLATED) overlay 2 dòng trong `#movie_player` đồng bộ currentTime + ẩn caption gốc. Chờ Chủ thầu giao TIP-F07.
 
 ## Feature board (nguồn: feature_list.json)
 | ID | Feature | Deps | Status |
@@ -20,12 +20,30 @@
 | F03 | Web auth (Google + AuthGuard + /api/me) | F01,F02 | done ✓ (login chờ Homeowner OAuth) |
 | F04 | API core (vocab + lookup AI + dashboard) | F03 | done ✓ (AI-call path chờ Homeowner OPENAI key) |
 | F05 | Web pages (tu-vung/flashcard/quiz/dashboard) | F04 | done ✓ (browser end-to-end chờ Homeowner OAuth) |
-| F06 | Extension scaffold (MV3 + auth-bridge + popup) | F04 | pending ◀ active |
-| F07 | Extension subtitles (intercept + overlay) | F06 | pending |
+| F06 | Extension scaffold (MV3 + auth-bridge + popup) | F04 | done ✓ (login thật chờ Homeowner OAuth) |
+| F07 | Extension subtitles (intercept + overlay) | F06 | pending ◀ active |
 | F08 | Extension click-word (lookup + save + settings) | F07 | pending |
 | F09 | SHIP + verify tổng + handover | F05,F08 | pending |
 
 ## Nhật ký (mới nhất trên cùng)
+### 2026-07-06 — F06 Extension scaffold (DONE) [Chủ thầu giao TIP → Thợ làm]
+- TIP: `.claude/tips/TIP-F06-extension-scaffold.md`. Kiến trúc chốt: extension CHỈ anon+URL; auth-bridge đọc localStorage web → forward session → background (`chrome.storage.local`); content gọi API qua message `SM_API` → background fetch Bearer (né CORS); 401 → refresh REST 1 lần → retry → fail thì logout; guard context-invalidated.
+- Files (extension): `manifest.json` (MV3, `permissions:["storage"]`, host_permissions=APP_ORIGIN+youtube, **không `<all_urls>`**, content_scripts auth-bridge@APP_URL + youtube stub), `src/lib/{env,supabaseExt,apiExt}.ts`, `src/background/service-worker.ts`, `src/content/auth-bridge.ts` (MỚI), `src/popup/popup.ts`+`.html` (thay stub), `build.mjs` (thêm entry auth-bridge + thay `__APP_ORIGIN__` theo EXT_APP_URL). `youtube.ts` giữ stub.
+- **Bằng chứng runtime (`next start` :3000 + user test service_role rồi xoá; replica pure-fn như F04/F05):**
+  - `typecheck` xanh (thêm `declare const process` type-only, không thêm @types/node/dep).
+  - `./init.sh extension` build dev+prod xanh; **SECRET P0: 0 secret trong dist** (anon key public có mặt; 0 service_role/OPENAI trong `.js/.json/.html`).
+  - Manifest: `permissions:["storage"]`, host cụ thể (localhost:3000 + youtube), **không `<all_urls>`**; `__APP_ORIGIN__` thay đúng.
+  - `STORAGE_KEY` = `sb-ealcahjaftwrllbudkyr-auth-token` (đúng ref).
+  - `parseSession`: bọc `{currentSession}` + phẳng đều parse; rác → null.
+  - `SM_API` (proxyFetch) GET /api/me token đúng → **ok:true 200** (id+email); token sai → **ok:false 401 KHÔNG throw**; POST body → ok:true.
+  - `refreshSession` REST (anon apikey): access_token mới (rotate) + hoạt động qua proxy; refresh sai → **null (logout path)**.
+  - auth-bridge guard: `if(!chrome.runtime?.id){clearInterval;return}` + try/catch quanh sendMessage (không loop khi context invalidated).
+- **Chờ Homeowner:** load unpacked Chrome + login Google thật để verify auth-bridge forward session end-to-end (cần OAuth). Logic + contract đã verify qua replica + live API.
+- **Deviations:**
+  1. **Secret grep false-positive** ban đầu: comment nguồn chứa chữ "service_role/OPENAI" lọt vào dev `.map` → init.sh báo FAIL. Không phải leak thật (`.js/.json/.html` sạch). Đổi comment env.ts (không dùng token literal) → grep sạch. **Đề xuất harness:** cân nhắc init.sh secret bỏ qua `*.map` hoặc chỉ scan artifact ship (prod không có map).
+  2. Thêm message `SM_LOGOUT` (popup Đăng xuất) + popup đọc `chrome.storage.local` trực tiếp (không thêm message SM_GET_STATUS) — trong tinh thần TIP.
+  3. Manifest match/host dùng placeholder `__APP_ORIGIN__` thay lúc build (giữ khớp EXT_APP_URL) — prod deploy cần set EXT_APP_URL đúng domain.
+
 ### 2026-07-06 — F05 Web pages (DONE) [Chủ thầu giao TIP → Thợ làm inline]
 - TIP: `.claude/tips/TIP-F05-web-pages.md`. Thực thi **inline tuần tự** (không parallel-build): 4 trang nhỏ + chia sẻ type/QuizGame → cohesion UI + tiết kiệm token.
 - Files (web): shared `lib/article.ts` (type Vocab + articleColor der=blue/die=pink/das=green/null=gray), `components/ui/{Button,Card,Badge,Spinner}.tsx`, `components/Header.tsx` (nav active + email + Đăng xuất); trang `app/tu-vung/page.tsx`, `app/hoc-tu-vung/page.tsx`, `components/QuizGame.tsx` (dùng chung, prop direction), `app/kiem-tra-duc-viet/page.tsx` + `app/kiem-tra-viet-duc/page.tsx`, thay `app/dashboard/page.tsx` (streak+3 stat+chart div thuần).
@@ -88,6 +106,25 @@
 - Bằng chứng: N/A (chưa có code để verify).
 
 ## Verification Evidence (command and output — dán vào đây khi có)
+### F06 — runtime (2026-07-06, `next start` :3000 + user test service_role → xoá)
+```
+extension typecheck -> OK (declare const process type-only; 0 dep mới)
+./init.sh extension  -> build dev+prod xanh; SECRET LEAK: OK 0 secret trong dist; VERIFY OK (extension)
+dist: service-worker.js, auth-bridge.js, youtube.js, popup.js, popup.html, manifest.json
+manifest: permissions=["storage"]; host_permissions=[http://localhost:3000/*, https://www.youtube.com/*]; all_urls=0
+secret grep shippable (.js/.json/.html): 0 service_role/OPENAI (anon key public có mặt)
+
+contract (replica pure-fn vs live API + Supabase):
+  STORAGE_KEY = sb-ealcahjaftwrllbudkyr-auth-token (đúng)
+  parseSession wrapped {currentSession} -> ok; plain -> ok; garbage/null -> null
+  SM_API GET /api/me (token đúng)  -> ok=true  status=200 (id+email)
+  SM_API GET /api/me (token sai)   -> ok=false status=401  (KHÔNG throw)
+  SM_API POST /api/vocabulary body -> ok=true  status=200 word=Hund
+  refreshSession(refresh_token)    -> access_token mới (rotate) + hoạt động qua proxy
+  refreshSession(sai)              -> null (logout path)
+  auth-bridge guard chrome.runtime.id undefined -> clearInterval (không loop)
+```
+
 ### F05 — runtime (2026-07-06, `next start` :3124, user test service_role → xoá)
 ```
 ./init.sh web -> VERIFY OK; ✔ No ESLint warnings or errors; build 16 routes

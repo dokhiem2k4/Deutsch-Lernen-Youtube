@@ -10,9 +10,14 @@
   "background": {
     "service_worker": "service-worker.js"
   },
-  "permissions": ["storage", "activeTab", "scripting"],
-  "host_permissions": ["https://www.youtube.com/*"],
+  "permissions": ["storage"],
+  "host_permissions": ["__APP_ORIGIN__/*", "https://www.youtube.com/*"],
   "content_scripts": [
+    {
+      "matches": ["__APP_ORIGIN__/*"],
+      "js": ["auth-bridge.js"],
+      "run_at": "document_idle"
+    },
     {
       "matches": ["https://www.youtube.com/*"],
       "js": ["youtube.js"],

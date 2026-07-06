@@ -87,7 +87,7 @@
       "name": "Extension scaffold (MV3 + auth-bridge + popup)",
       "description": "Manifest MV3, service-worker SM_API proxy, auth-bridge doc localStorage web, popup login/logout, lib chi chua anon key.",
       "dependencies": ["F04"],
-      "status": "pending",
+      "status": "done",
       "scope": ["manifest.json MV3", "background/service-worker (SM_API proxy)", "content/auth-bridge", "popup: login + mo web + dang xuat", "lib: apiExt, supabaseExt, env (anon key only)"],
       "done_when": [
         "build dev + prod sach",
