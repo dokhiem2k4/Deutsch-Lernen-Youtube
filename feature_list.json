@@ -1,0 +1,143 @@
+{
+  "project": "Deutsch Lernen — YouTube DE->VI",
+  "blueprint": "docs/superpowers/specs/2026-07-05-deutsch-lernen-mvp-design.md",
+  "workflow": ".claude/workflow/pipeline.md",
+  "active_feature": "F04",
+  "legend": {
+    "status": ["pending", "in_progress", "blocked", "done", "verified", "deferred"],
+    "rule": "One feature at a time. 'done' needs evidence in progress.md. Web truoc, Extension sau. dependencies phai done truoc."
+  },
+  "features": [
+    {
+      "id": "F01",
+      "name": "Scaffold monorepo",
+      "description": "Dung skeleton npm-workspaces: web (Next.js 15 App Router) + extension (MV3 + build.mjs) + supabase/migrations + .env.example + README.",
+      "dependencies": [],
+      "status": "done",
+      "scope": ["package.json (workspaces web+extension)", "web/ Next.js 15 App Router skeleton", "extension/ MV3 skeleton + build.mjs", "supabase/migrations/ empty", ".env.example (web + extension)", "README.md"],
+      "done_when": [
+        "npm install chay sach o root",
+        "web: npm run build pass tren skeleton",
+        "extension: build.mjs chay ra dist/",
+        ".env.example liet ke du: SUPABASE URL/anon/service_role, OPENAI_API_KEY, APP_URL"
+      ],
+      "verify": ["./init.sh scaffold", "./init.sh web"]
+    },
+    {
+      "id": "F02",
+      "name": "Supabase migrations (schema + RLS + trigger + RPC)",
+      "description": "001 init 3 bang + RLS theo auth.uid() + trigger handle_new_user; 002 rpc get_dashboard (streak/total/chart, gio VN UTC+7). Project ref: ealcahjaftwrllbudkyr (org DeutschLernen, ap-southeast-1). 003 harden function grants.",
+      "dependencies": ["F01"],
+      "status": "done",
+      "scope": ["001_init: profiles, vocabulary(UNIQUE user_id,word), ai_meaning_cache", "RLS moi bang theo auth.uid()", "trigger handle_new_user (SECURITY DEFINER)", "002_rpc: get_dashboard() SECURITY DEFINER"],
+      "done_when": [
+        "migration apply sach (local hoac remote)",
+        "RLS bat tren ca 3 bang; ai_meaning_cache khong co policy cho authenticated",
+        "get_dashboard tra dung shape: {total_learned,total_words,streak,today_active,chart[30]}"
+      ],
+      "verify": ["security.md: RLS cross-user", "supabase advisors"]
+    },
+    {
+      "id": "F03",
+      "name": "Web auth (Google login + AuthGuard + /api/me)",
+      "description": "Login Google qua Supabase, /auth/callback, AuthGuard redirect, GET /api/me tra profile, lib supabase client/server.",
+      "dependencies": ["F01", "F02"],
+      "status": "done",
+      "scope": ["/ login Google", "/auth/callback", "AuthGuard component", "GET /api/me", "lib/supabaseClient + supabaseServer + cors + apiClient", "hooks/useUser", "/dashboard placeholder"],
+      "done_when": [
+        "login Google -> callback -> session luu (CHO Homeowner bat OAuth de verify)",
+        "GET /api/me thieu/sai JWT -> 401 (DONE); co JWT -> {id,email,nickname} (CHO Homeowner)",
+        "route bao ve redirect ve / khi chua login (AuthGuard)",
+        "CORS phan chieu origin, khong '*' (DONE, test OPTIONS)"
+      ],
+      "verify": ["security.md: auth 401 + JWT verify + CORS", "./init.sh web", "runtime curl 401/OPTIONS PASS"]
+    },
+    {
+      "id": "F04",
+      "name": "API core (vocabulary + lookup-context AI + dashboard)",
+      "description": "Route Handlers: vocabulary CRUD idempotent, mark-learned, lookup-context (cache -> gpt-4o-mini -> cache, fallback khong 500), dashboard RPC, health, CORS reflect origin.",
+      "dependencies": ["F03"],
+      "status": "pending",
+      "scope": ["GET/POST/DELETE /api/vocabulary (idempotent UNIQUE)", "POST /api/vocabulary/mark-learned", "POST /api/lookup-context", "GET /api/dashboard (RPC)", "GET /api/health public", "CORS reflect origin + chrome-extension"],
+      "done_when": [
+        "moi route bao ve -> 401 khi thieu token (test)",
+        "vocabulary POST trung -> tra dong cu, khong loi (test idempotent)",
+        "lookup-context: cache hit khong goi AI; miss ghi cache; thieu OPENAI_API_KEY -> {source:error, meaning_vi:''} khong 500",
+        "dashboard tra RPC shape dung"
+      ],
+      "verify": ["security.md: authz + CORS + prompt-injection", "./init.sh web"]
+    },
+    {
+      "id": "F05",
+      "name": "Web pages (tu-vung, flashcard, quiz 2 chieu, dashboard)",
+      "description": "Trang tu-vung (list+xoa+trang thai), hoc-tu-vung flashcard (mark learned), quiz 2 chieu (QuizGame direction, <4 tu chan), dashboard (streak+chart), article to mau theo giong.",
+      "dependencies": ["F04"],
+      "status": "pending",
+      "scope": ["/tu-vung", "/hoc-tu-vung flashcard", "/kiem-tra-duc-viet + /kiem-tra-viet-duc QuizGame(direction)", "/dashboard streak+chart 30 ngay", "components: Header, QuizGame, ui/*", "article to mau der/die/das"],
+      "done_when": [
+        "flashcard xem the -> learned_at set",
+        "quiz <4 tu -> chan co thong bao; >=4 -> 4 dap an 1 dung",
+        "dashboard hien streak + chart",
+        "build + lint + typecheck sach"
+      ],
+      "verify": ["./init.sh web", "DevEx review (pipeline.md)"]
+    },
+    {
+      "id": "F06",
+      "name": "Extension scaffold (MV3 + auth-bridge + popup)",
+      "description": "Manifest MV3, service-worker SM_API proxy, auth-bridge doc localStorage web, popup login/logout, lib chi chua anon key.",
+      "dependencies": ["F04"],
+      "status": "pending",
+      "scope": ["manifest.json MV3", "background/service-worker (SM_API proxy)", "content/auth-bridge", "popup: login + mo web + dang xuat", "lib: apiExt, supabaseExt, env (anon key only)"],
+      "done_when": [
+        "build dev + prod sach",
+        "grep dist: 0 service_role / 0 OPENAI key",
+        "popup hien user sau khi login tren web",
+        "bat loi 'Extension context invalidated' (stop poll)"
+      ],
+      "verify": ["./init.sh extension", "security.md: secret leakage"]
+    },
+    {
+      "id": "F07",
+      "name": "Extension subtitles (intercept + overlay DE+VI)",
+      "description": "yt-intercept MAIN world bat timedtext da ky (DE json3 + VI tlang=vi), xu ly anti-bot retry, overlay 2 dong ISOLATED trong #movie_player dong bo currentTime.",
+      "dependencies": ["F06"],
+      "status": "pending",
+      "scope": ["yt-intercept MAIN world: hook fetch/XHR", "DE (fmt=json3) + VI (baseUrl + tlang=vi)", "anti-bot 'Sorry' -> retry 1 lan + nhan trang thai", "youtube.ts ISOLATED overlay + an caption goc"],
+      "done_when": [
+        "video DE that -> 2 dong Duc+Viet dong bo currentTime",
+        "video khong caption -> im lang khong throw",
+        "VI blocked -> nhan trang thai, khong vo"
+      ],
+      "verify": ["Homeowner: 1 video that", "security.md: anti-bot fetch"]
+    },
+    {
+      "id": "F08",
+      "name": "Extension click-word (lookup AI + save + settings)",
+      "description": "Click tu Duc -> pause -> lookup-context qua background -> popup nghia (lemma+article) + Luu + loa de-DE; settings phu de chrome.storage ap realtime.",
+      "dependencies": ["F07"],
+      "status": "pending",
+      "scope": ["click tu -> pause -> SM_API POST /api/lookup-context", "popup: lemma+article+meaning_vi + Luu (example=cau) + loa speechSynthesis de-DE", "click ngoai -> play", "settings {showDe,showVi,bgEnabled,bgOpacity,fontSizePx} realtime"],
+      "done_when": [
+        "click tu -> nghia AI dung ngu canh -> Luu -> web /tu-vung thay tu",
+        "settings doi realtime va persist",
+        "loa phat de-DE"
+      ],
+      "verify": ["Homeowner: full flow", "security.md: prompt-injection + secret grep"]
+    },
+    {
+      "id": "F09",
+      "name": "SHIP + verify tong + handover",
+      "description": "Adversarial verify toan bo, security final pass, README/handover Diataxis, SHIP gate lint+typecheck+build+test all green, MONITOR post-ship.",
+      "dependencies": ["F05", "F08"],
+      "status": "pending",
+      "scope": ["adversarial VERIFY (pipeline.md)", "security final pass", "README + handover (Diataxis)", "SHIP gate all green"],
+      "done_when": [
+        "moi REQ trong Blueprint co feature map + verified",
+        "0 secret trong dist (./init.sh secret)",
+        "README day du: setup Supabase/OAuth/OpenAI + apply migration + run"
+      ],
+      "verify": ["pipeline.md SHIP + MONITOR", "Homeowner: §9 DoD full flow"]
+    }
+  ]
+}
