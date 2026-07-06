@@ -102,7 +102,7 @@
       "name": "Extension subtitles (intercept + overlay DE+VI)",
       "description": "yt-intercept MAIN world bat timedtext da ky (DE json3 + VI tlang=vi), xu ly anti-bot retry, overlay 2 dong ISOLATED trong #movie_player dong bo currentTime.",
       "dependencies": ["F06"],
-      "status": "pending",
+      "status": "done",
       "scope": ["yt-intercept MAIN world: hook fetch/XHR", "DE (fmt=json3) + VI (baseUrl + tlang=vi)", "anti-bot 'Sorry' -> retry 1 lan + nhan trang thai", "youtube.ts ISOLATED overlay + an caption goc"],
       "done_when": [
         "video DE that -> 2 dong Duc+Viet dong bo currentTime",

@@ -28,6 +28,7 @@ await esbuild.build({
   entryPoints: {
     "service-worker": "src/background/service-worker.ts",
     "auth-bridge": "src/content/auth-bridge.ts",
+    "yt-intercept": "src/content/yt-intercept.ts",
     "youtube": "src/content/youtube.ts",
     "popup": "src/popup/popup.ts",
   },

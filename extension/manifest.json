@@ -20,6 +20,12 @@
     },
     {
       "matches": ["https://www.youtube.com/*"],
+      "js": ["yt-intercept.js"],
+      "run_at": "document_start",
+      "world": "MAIN"
+    },
+    {
+      "matches": ["https://www.youtube.com/*"],
       "js": ["youtube.js"],
       "run_at": "document_idle"
     }

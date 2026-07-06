@@ -4,13 +4,13 @@
 
 ## Current State
 - **Last Updated:** 2026-07-06.
-- **Phase:** BUILD. F01–F06 **done** → active `F07` (extension subtitles).
-- **Current Objective / Active feature:** `F07 — Extension subtitles (intercept timedtext + overlay DE+VI)`.
-- **What đã build:** F01–F05 (web MVP) + **Extension scaffold (F06)**: manifest MV3 (quyền tối thiểu `storage`, host cụ thể APP_URL+youtube, **không `<all_urls>`**), `background/service-worker` (SM_API proxy Bearer + 401→refresh→retry, SM_SESSION/SM_LOGOUT), `content/auth-bridge` (đọc session localStorage web → forward, guard context-invalidated), popup (email/login/logout), lib `env`/`supabaseExt`/`apiExt` (chỉ anon+URL). `youtube.ts` giữ stub.
+- **Phase:** BUILD. F01–F07 **done** → active `F08` (extension click-từ) — feature cuối trước F09 SHIP.
+- **Current Objective / Active feature:** `F08 — Extension click-word (lookup AI + save + settings)`.
+- **What đã build:** F01–F05 (web MVP) + F06 (extension scaffold) + **Extension subtitles (F07)**: `lib/captions.ts` (parseJson3/pickCue/isAntiBot/buildUrl — pure, unit-tested), `content/yt-intercept.ts` (MAIN world document_start: patch fetch+XHR bắt timedtext đã ký → refetch DE+VI → postMessage, không chặn gốc), `content/youtube.ts` (ISOLATED: overlay 2 dòng #movie_player sync currentTime, ẩn caption gốc CSS, chỉ tin source:'DL'). manifest +yt-intercept world:MAIN.
 - **Blockers:**
-  - **Google OAuth** chưa bật (Homeowner: Blueprint §10.2, redirect `https://ealcahjaftwrllbudkyr.supabase.co/auth/v1/callback`) → cần login thật để verify auth-bridge + smoke test F05 browser end-to-end.
-  - **`OPENAI_API_KEY` trống** → F04 AI-call path chờ Homeowner (cần cho F08 click-từ). Không chặn F07.
-- **Recommended Next Step:** F07 — `yt-intercept.ts` (MAIN world, hook fetch/XHR bắt `timedtext` đã ký: DE json3 + VI `&tlang=vi`), anti-bot "Sorry" retry 1 lần, `youtube.ts` (ISOLATED) overlay 2 dòng trong `#movie_player` đồng bộ currentTime + ẩn caption gốc. Chờ Chủ thầu giao TIP-F07.
+  - **Google OAuth** chưa bật (Homeowner: Blueprint §10.2, redirect `https://ealcahjaftwrllbudkyr.supabase.co/auth/v1/callback`) → login thật để verify auth-bridge + smoke test F05 browser + F08 click-lưu end-to-end.
+  - **`OPENAI_API_KEY` trống** → **cần cho F08 click-từ** (`/api/lookup-context` gọi AI thật). Fallback không 500 đã verify — F08 code + test fallback được, nghĩa thật chờ key.
+- **Recommended Next Step:** F08 — click từ Đức trong overlay → `video.pause()` → `smApi("POST","/api/lookup-context",{word,sentence})` qua background → popup nghĩa (lemma+article) + Lưu (`POST /api/vocabulary`, example=câu) + loa `speechSynthesis` de-DE; click ngoài → play; settings `{showDe,showVi,bgEnabled,bgOpacity,fontSizePx}` `chrome.storage.local` realtime. Chờ Chủ thầu giao TIP-F08.
 
 ## Feature board (nguồn: feature_list.json)
 | ID | Feature | Deps | Status |
@@ -21,11 +21,22 @@
 | F04 | API core (vocab + lookup AI + dashboard) | F03 | done ✓ (AI-call path chờ Homeowner OPENAI key) |
 | F05 | Web pages (tu-vung/flashcard/quiz/dashboard) | F04 | done ✓ (browser end-to-end chờ Homeowner OAuth) |
 | F06 | Extension scaffold (MV3 + auth-bridge + popup) | F04 | done ✓ (login thật chờ Homeowner OAuth) |
-| F07 | Extension subtitles (intercept + overlay) | F06 | pending ◀ active |
-| F08 | Extension click-word (lookup + save + settings) | F07 | pending |
+| F07 | Extension subtitles (intercept + overlay) | F06 | done ✓ (overlay runtime chờ Homeowner video Đức) |
+| F08 | Extension click-word (lookup + save + settings) | F07 | pending ◀ active |
 | F09 | SHIP + verify tổng + handover | F05,F08 | pending |
 
 ## Nhật ký (mới nhất trên cùng)
+### 2026-07-06 — F07 Extension subtitles (DONE, logic) [Chủ thầu giao TIP → Thợ làm]
+- TIP: `.claude/tips/TIP-F07-extension-subtitles.md`. Kiến trúc chốt: hook fetch/XHR ở MAIN world bắt URL timedtext **đã ký** player tự gọi → refetch DE (fmt=json3) + VI (tlang=vi) từ chính baseUrl (không tự dựng URL → né anti-bot); MAIN→ISOLATED qua `window.postMessage`; overlay + currentTime ở ISOLATED.
+- Files (extension): `src/lib/captions.ts` (MỚI, pure: parseJson3/pickCue/isAntiBot/buildUrl), `src/content/yt-intercept.ts` (MỚI, MAIN/document_start: patch fetch+XHR, anti-bot VI retry 1 lần → blocked, không chặn request gốc), `src/content/youtube.ts` (THAY stub, ISOLATED: overlay 2 dòng #movie_player, pickCue theo currentTime, ẩn caption gốc bằng CSS, reset khi SPA đổi video), `manifest.json` (+yt-intercept `world:"MAIN"` document_start), `build.mjs` (+entry yt-intercept).
+- **Bằng chứng (unit-test REAL captions.ts qua esbuild bundle → node; build/secret):**
+  - `captions.ts` **20/20 unit test PASS**: parseJson3 (3 cue từ 5 event, bỏ rỗng, ms→s, json hỏng→[], object input), pickCue (max-start, t=3→A, t=4.5→null, t=6→B, overlap→max-start, biên inclusive/exclusive), isAntiBot (Sorry/unusual→true, json3→false, rỗng→false), buildUrl (giữ signature, fmt=json3, DE bỏ tlang, VI tlang=vi, ghi đè fmt cũ).
+  - `typecheck` xanh; `build --prod` xanh; dist có `yt-intercept.js`; manifest `world:"MAIN"`+`document_start` đúng.
+  - `./init.sh extension` **0 secret** (init.sh nay đã bỏ qua `*.map` — Homeowner áp dụng đề xuất F06).
+  - Security: ISOLATED chỉ tin `e.source===window && d.source==='DL'`; MAIN `return origFetch/origOpen` (không chặn gốc); try/catch bọc tick + patch (không throw khi no-caption).
+- **Chờ Homeowner (runtime video Đức thật):** load unpacked → mở video YouTube tiếng Đức CÓ phụ đề → xác nhận overlay 2 dòng Đức+Việt sync currentTime; video no-caption → im lặng không lỗi; VI bị chặn → chỉ DE + nhãn. Hướng dẫn ở session-handoff.
+- **Deviations:** (1) VI blocked hiển thị nhãn "— bản dịch tự động bị chặn —" ở dòng VI khi có DE (TIP: "chỉ DE + nhãn"). (2) Dùng `requestAnimationFrame` loop cho overlay sync (mượt, rẻ) thay poll interval. (3) dedupe timedtext theo base (bỏ fmt/tlang) + clear khi `yt-navigate-finish` (SPA).
+
 ### 2026-07-06 — F06 Extension scaffold (DONE) [Chủ thầu giao TIP → Thợ làm]
 - TIP: `.claude/tips/TIP-F06-extension-scaffold.md`. Kiến trúc chốt: extension CHỈ anon+URL; auth-bridge đọc localStorage web → forward session → background (`chrome.storage.local`); content gọi API qua message `SM_API` → background fetch Bearer (né CORS); 401 → refresh REST 1 lần → retry → fail thì logout; guard context-invalidated.
 - Files (extension): `manifest.json` (MV3, `permissions:["storage"]`, host_permissions=APP_ORIGIN+youtube, **không `<all_urls>`**, content_scripts auth-bridge@APP_URL + youtube stub), `src/lib/{env,supabaseExt,apiExt}.ts`, `src/background/service-worker.ts`, `src/content/auth-bridge.ts` (MỚI), `src/popup/popup.ts`+`.html` (thay stub), `build.mjs` (thêm entry auth-bridge + thay `__APP_ORIGIN__` theo EXT_APP_URL). `youtube.ts` giữ stub.
@@ -106,6 +117,23 @@
 - Bằng chứng: N/A (chưa có code để verify).
 
 ## Verification Evidence (command and output — dán vào đây khi có)
+### F07 — unit-test captions.ts + build/secret (2026-07-06)
+```
+esbuild bundle src/lib/captions.ts → node → 20 passed, 0 failed:
+  parseJson3: 3 cue/5 event (bỏ rỗng), joins+trim, ms→s, json hỏng→[], object input
+  pickCue: t=3→A(start2), t=4.5→null(gap), t=6→B(start5), overlap→max-start,
+           biên t=start inclusive, t=start+dur exclusive
+  isAntiBot: Sorry/automated→true, unusual traffic→true, json3→false, rỗng→false
+  buildUrl: DE giữ signature + fmt=json3 + bỏ tlang; VI tlang=vi + fmt=json3 + signature;
+            ghi đè fmt=srv3 cũ → json3
+
+typecheck -w extension -> OK
+build --prod -> dist: service-worker, auth-bridge, yt-intercept, youtube, popup, manifest, popup.html
+manifest yt-intercept: run_at=document_start, world=MAIN (đúng)
+./init.sh extension -> SECRET LEAK OK: 0 secret trong dist (artifact ship, bỏ qua *.map)
+security: ISOLATED chỉ nhận source:'DL' + same window; MAIN return origFetch/origOpen (không chặn)
+```
+
 ### F06 — runtime (2026-07-06, `next start` :3000 + user test service_role → xoá)
 ```
 extension typecheck -> OK (declare const process type-only; 0 dep mới)
