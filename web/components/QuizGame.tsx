@@ -23,10 +23,26 @@ function germanLabel(v: Vocab) {
   return [v.article, v.word].filter(Boolean).join(" ");
 }
 
-// Mỗi câu: 1 đáp án đúng + 3 distractor random từ chính vocab user (không AI).
-function buildQuiz(pool: Vocab[]): Question[] {
+// Text sẽ hiển thị trên nút đáp án theo chiều quiz.
+function displayText(v: Vocab, direction: Direction) {
+  return direction === "de-vi" ? v.meaning_vi ?? "" : germanLabel(v);
+}
+
+// Mỗi câu: 1 đáp án đúng + tối đa 3 distractor random từ chính vocab user (không AI).
+// Distractor dedup theo TEXT HIỂN THỊ (không theo id) → tránh 2 nút trùng chữ khi có từ đồng nghĩa
+// (vd "sehen"/"schauen" đều = "nhìn"): chỉ 1 đáp án đúng, các nút text unique.
+function buildQuiz(pool: Vocab[], direction: Direction): Question[] {
   return shuffle(pool).map((prompt) => {
-    const distractors = shuffle(pool.filter((v) => v.id !== prompt.id)).slice(0, 3);
+    const answerText = displayText(prompt, direction);
+    const seen = new Set([answerText]);
+    const distractors: Vocab[] = [];
+    for (const v of shuffle(pool)) {
+      if (distractors.length >= 3) break;
+      const t = displayText(v, direction);
+      if (v.id === prompt.id || seen.has(t)) continue;
+      seen.add(t);
+      distractors.push(v);
+    }
     return {
       prompt,
       options: shuffle([prompt, ...distractors]),
@@ -52,13 +68,13 @@ export default function QuizGame({ direction }: { direction: Direction }) {
         // Cần word + meaning_vi để tạo đề 2 chiều.
         const valid = (Array.isArray(d) ? d : []).filter((v) => v.word && v.meaning_vi);
         setPool(valid);
-        if (valid.length >= 4) setQuestions(buildQuiz(valid));
+        if (valid.length >= 4) setQuestions(buildQuiz(valid, direction));
       })
       .catch(() => on && setError(true));
     return () => {
       on = false;
     };
-  }, []);
+  }, [direction]);
 
   if (error)
     return <p className="text-center text-gray-500">Không tải được từ vựng.</p>;
@@ -87,7 +103,7 @@ export default function QuizGame({ direction }: { direction: Direction }) {
         </p>
         <Button
           onClick={() => {
-            setQuestions(buildQuiz(pool));
+            setQuestions(buildQuiz(pool, direction));
             setI(0);
             setPicked(null);
             setScore(0);

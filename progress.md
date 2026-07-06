@@ -38,7 +38,8 @@
   - Flashcard: mark-learned 1 từ → `learned_at` set. Dashboard: total_words=5, learned=1, streak=1, chart[30], đủ 5 khoá. tu-vung DELETE → biến mất, count giảm.
   - Security greps: 0 `innerHTML`, không gọi supabase trực tiếp ở trang (chỉ Header `signOut`), chỉ `apiFetch`, `package.json` không đổi (0 dep mới).
 - **Chờ Homeowner:** smoke test browser end-to-end (login Google → list/flashcard/quiz/dashboard hiển thị) cần bật OAuth. Logic + data-path đã verify qua user test.
-- **Deviations:** feature_list §F05 scope có "article tô màu der/die/das" (bài đọc mẫu) nhưng **TIP-F05 không liệt kê** → giữ đúng scope TIP (4 trang), không tự thêm. Đề xuất Chủ thầu chốt: bài đọc mẫu để F05.1 riêng hay bỏ.
+- **Deviations:** feature_list §F05 scope có "article tô màu der/die/das" nhưng **TIP-F05 không liệt kê** → giữ đúng scope TIP. **Chủ thầu chốt:** "article tô màu" CHÍNH là `articleColor` đã làm (không có feature "bài đọc mẫu" nào — Thợ nhầm khái niệm). Không có gap, không cần F05.1.
+- **VERIFY (Chủ thầu, adversarial-verify 13 agent):** 11/12 ok. **1 finding confidence HIGH (judge-confirmed):** QuizGame chọn distractor theo `id`, không dedup theo text → 2 từ đồng nghĩa (sehen/schauen = "nhìn") tạo 2 nút trùng chữ, bấm nút đúng-nhìn-thấy kia bị chấm SAI. **Đã vá:** `buildQuiz(pool, direction)` dedup distractor theo text hiển thị. Unit-test 5000 câu trên pool synonym → 0 bad (text unique + đúng 1 đáp án). `./init.sh web` xanh.
 
 ### 2026-07-06 — F04 API core (DONE) [Chủ thầu giao TIP → Thợ làm]
 - TIP: `.claude/tips/TIP-F04-api-core.md`. Kiến trúc chốt: vocab/mark-learned/dashboard qua scoped-JWT (RLS); lookup-context verify user (401) rồi cache+OpenAI bằng service_role; user_id luôn từ JWT.
