@@ -1,0 +1,22 @@
+{
+  "manifest_version": 3,
+  "name": "Deutsch Lernen",
+  "version": "0.1.0",
+  "description": "Phụ đề Đức–Việt + tra từ AI trên YouTube",
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Deutsch Lernen"
+  },
+  "background": {
+    "service_worker": "service-worker.js"
+  },
+  "permissions": ["storage", "activeTab", "scripting"],
+  "host_permissions": ["https://www.youtube.com/*"],
+  "content_scripts": [
+    {
+      "matches": ["https://www.youtube.com/*"],
+      "js": ["youtube.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}

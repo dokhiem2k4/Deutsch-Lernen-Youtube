@@ -1,0 +1,14 @@
+{
+  "name": "deutsch-lernen",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": ["web", "extension"],
+  "scripts": {
+    "dev": "npm run dev -w web",
+    "build": "npm run build -w web && npm run build -w extension",
+    "build:web": "npm run build -w web",
+    "build:ext": "npm run build -w extension",
+    "lint": "npm run lint -w web",
+    "typecheck": "npm run typecheck -w web && npm run typecheck -w extension"
+  }
+}

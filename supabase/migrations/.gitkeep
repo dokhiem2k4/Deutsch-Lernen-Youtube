@@ -1,0 +1,1 @@
+# migrations sẽ được thêm ở F02 (001_init schema+RLS+trigger, 002_rpc get_dashboard).
