@@ -26,8 +26,11 @@
 | F09 | SHIP + verify tổng + handover | F05,F08 | pending ◀ active |
 
 ## Nhật ký (mới nhất trên cùng)
-### 2026-07-06 — F08 Click-word + settings (DONE, logic) [Chủ thầu giao TIP → Thợ làm]
+### 2026-07-06 — F08 Click-word + settings (DONE) [Chủ thầu giao TIP → Thợ làm → VERIFY bắt 1 bug]
 - TIP: `.claude/tips/TIP-F08-click-word.md`. Kiến trúc chốt: thẻ nghĩa **in-page** (youtube.ts render trong #movie_player, KHÔNG action-popup); lookup qua **SM_API** (không gọi API trực tiếp); pause khi click từ, play khi đóng/click-ngoài **chỉ nếu ta chủ động pause**; settings `chrome.storage.local` realtime; render as text.
+- **VERIFY (adversarial-verify 17 agent): 1 finding confidence HIGH (2 agent độc lập xác nhận, judge-confirmed):** `pausedByUs` stale — click từ (pause, cờ=true) → thẻ mở → user Space▶ (play; keydown không đóng thẻ, cờ vẫn true) → Space⏸ (user tự pause) → Đóng → `closeCard` ép `play()` video user cố tình dừng. Vi phạm "không tự play nếu user đã pause".
+- **Đã vá:** listener `video.'play'` khi ta pause → user chạy lại bằng bất kỳ cách nào → nhả `pausedByUs`; `closeCard` chỉ play nếu còn sở hữu. Trace state-machine: bug-case KHÔNG ép play ✓; normal-case play lại đúng ✓. build+typecheck+secret xanh.
+- Bằng chứng Thợ (trước VERIFY): words.ts+settings.ts 17 unit PASS; SM_API contract (lookup fallback source:error không 500, vocabulary idempotent lưu→web thấy); 0 innerHTML (createElement/textContent); 0 secret.
 - Files (extension): `src/lib/words.ts` (MỚI, pure: tokenize/cleanWord giữ ä/ö/ü/ß), `src/lib/settings.ts` (MỚI: DEFAULT/get/set/clampSettings/onSettingsChanged, key dl-settings), `src/lib/speak.ts` (MỚI: speakDe de-DE guard), `src/content/youtube.ts` (MỞ RỘNG F07: span từ click được → pause + thẻ lookup+Lưu+loa, click ngoài→play, settings realtime CSS var; giữ nguyên overlay-core/intercept F07), `src/popup/popup.ts`+`.html` (MỞ RỘNG F06: khu Cài đặt phụ đề). **Không** đổi manifest/build.mjs (lib import, không phải content-script mới).
 - **Bằng chứng (unit-test REAL source qua esbuild bundle; build/secret; SM_API contract live):**
   - `words.ts` + `settings.ts` **17/17 unit PASS**: tokenize ("Das Haus, ist groß!"→clean Haus/groß, giữ ß, geht's, ''→[]); clampSettings (fontSizePx 99→32, 5→12; bgOpacity 200→100, -5→0; thiếu→default; kiểu sai→default); getSettings storage trống→DEFAULT; setSettings persist+clamp+merge.
