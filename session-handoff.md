@@ -9,12 +9,13 @@
 
 ## Đang ở đâu (restart markers)
 - **Last Updated:** 2026-07-06.
-- **Current Objective / Feature active:** F05 — Web pages (tu-vung/flashcard/quiz/dashboard). F01+F02+F03+F04 DONE.
-- **Recommended Next Step:** F05 — `/tu-vung` (list + xoá + trạng thái Từ mới/Đã học), `/hoc-tu-vung` flashcard (lật thẻ → mark-learned), quiz 2 chiều `/kiem-tra-duc-viet` + `/kiem-tra-viet-duc` (`QuizGame` prop direction, <4 từ chặn có thông báo, ≥4 → 4 đáp án 1 đúng), `/dashboard` streak+chart 30 ngày, components Header/QuizGame/ui/*. **Gọi API F04 qua `lib/apiClient.ts`** (đã kèm Bearer JWT). Có TIP mẫu ở `.claude/tips/` (chờ Chủ thầu giao TIP-F05).
-- **API F04 sẵn dùng cho F05:** `GET/POST/DELETE /api/vocabulary`, `POST /api/vocabulary/mark-learned {ids}`, `POST /api/lookup-context {word,sentence}`, `GET /api/dashboard`. Tất cả cần Bearer JWT.
+- **Current Objective / Feature active:** F06 — Extension scaffold (MV3 + auth-bridge + popup). F01–F05 DONE (web MVP code-complete).
+- **Recommended Next Step:** F06 — extension MV3: `manifest.json`, `background/service-worker` (SM_API proxy tới `/api/*`), `content/auth-bridge` (đọc session localStorage web — key `sb-<ref>-auth-token`), popup login/mở web/đăng xuất, lib chỉ chứa **anon key + URL** (KHÔNG service_role/OPENAI). `./init.sh extension` xanh + grep dist **0 secret**. Bắt lỗi "Extension context invalidated" (stop poll). Chờ Chủ thầu giao TIP-F06.
+- **F05 web đã xong (dùng để verify cùng extension):** `/tu-vung`, `/hoc-tu-vung`, `/kiem-tra-{duc-viet,viet-duc}`, `/dashboard`. Session lưu localStorage (`supabaseClient` persistSession) → auth-bridge F06 đọc được.
+- **API F04/F05 sẵn:** `GET/POST/DELETE /api/vocabulary`, `POST /api/vocabulary/mark-learned {ids}`, `POST /api/lookup-context {word,sentence}`, `GET /api/dashboard`. Bearer JWT. CORS đã phản chiếu `chrome-extension://`.
 - **Blockers:**
-  - **`OPENAI_API_KEY` trống** → `/api/lookup-context` path gọi AI thật (`source:"cache"`/`"openai"`) chờ Homeowner điền key. Fallback `source:"error"` đã verify không 500 → F05 code được (không chặn).
-  - **Google OAuth** chưa bật → verify login thật + path token-hợp-lệ end-to-end (Homeowner, redirect `https://ealcahjaftwrllbudkyr.supabase.co/auth/v1/callback`). Test authed đang dùng user tạo qua service_role.
+  - **`OPENAI_API_KEY` trống** → `/api/lookup-context` path gọi AI thật chờ Homeowner. Fallback không 500 đã verify. Cần cho F08 click-từ.
+  - **Google OAuth** chưa bật → smoke test browser end-to-end F05 (login → list/flashcard/quiz/dashboard) + auth-bridge F06 cần login thật. Test authed hiện dùng user tạo qua service_role.
 - **Supabase:** project `ealcahjaftwrllbudkyr` live. `.env`/`web/.env.local` có creds. MCP đang **không** `--read-only`; PAT nên rotate (đã lộ trong chat).
 - **Files:** `web/` (Next 15 + auth F03), `extension/` (MV3 scaffold), `supabase/migrations/` (3 .sql applied). `node_modules/` cài rồi.
 

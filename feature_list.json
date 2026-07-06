@@ -72,7 +72,7 @@
       "name": "Web pages (tu-vung, flashcard, quiz 2 chieu, dashboard)",
       "description": "Trang tu-vung (list+xoa+trang thai), hoc-tu-vung flashcard (mark learned), quiz 2 chieu (QuizGame direction, <4 tu chan), dashboard (streak+chart), article to mau theo giong.",
       "dependencies": ["F04"],
-      "status": "pending",
+      "status": "done",
       "scope": ["/tu-vung", "/hoc-tu-vung flashcard", "/kiem-tra-duc-viet + /kiem-tra-viet-duc QuizGame(direction)", "/dashboard streak+chart 30 ngay", "components: Header, QuizGame, ui/*", "article to mau der/die/das"],
       "done_when": [
         "flashcard xem the -> learned_at set",

@@ -4,13 +4,13 @@
 
 ## Current State
 - **Last Updated:** 2026-07-06.
-- **Phase:** BUILD. F01 + F02 + F03 + F04 **done** → active `F05`.
-- **Current Objective / Active feature:** `F05 — Web pages (tu-vung/flashcard/quiz/dashboard)`.
-- **What đã build:** scaffold (F01) + Supabase DB live (F02) + Web auth (F03) + **API core (F04)**: 4 route (`/api/vocabulary` GET/POST idempotent/DELETE, `/api/vocabulary/mark-learned`, `/api/lookup-context` cache→gpt-4o-mini→fallback, `/api/dashboard` RPC) + 2 lib (`supabaseAdmin` service_role, `openai` lookupWord). Tái dùng `getUserFromRequest`+`corsHeaders`.
+- **Phase:** BUILD. F01–F05 **done** → active `F06` (extension). Web MVP code-complete.
+- **Current Objective / Active feature:** `F06 — Extension scaffold (MV3 + auth-bridge + popup)`.
+- **What đã build:** scaffold (F01) + Supabase DB (F02) + Web auth (F03) + API core (F04) + **Web pages (F05)**: `/tu-vung` (list+xoá+Badge trạng thái), `/hoc-tu-vung` (flashcard lật + loa de-DE + mark-learned), `/kiem-tra-duc-viet` + `/kiem-tra-viet-duc` (`QuizGame` direction, <4 chặn), `/dashboard` (streak+3 stat+chart 30 ngày div thuần) + shared `lib/article`, `components/ui/{Button,Card,Badge,Spinner}`, `components/Header`.
 - **Blockers:**
-  - **Google OAuth** chưa bật (Homeowner: Blueprint §10.2, redirect `https://ealcahjaftwrllbudkyr.supabase.co/auth/v1/callback`) → cần để verify login thật + path /api/me token-hợp-lệ.
-  - **`OPENAI_API_KEY` trống** → F04 path `source:"cache"`/`source:"openai"` (gọi AI thật) **chờ Homeowner** điền key. Fallback `source:"error"` đã verify không 500.
-- **Recommended Next Step:** F05 — trang `/tu-vung` (list+xoá+trạng thái), `/hoc-tu-vung` flashcard (mark-learned), quiz 2 chiều (`QuizGame` direction, <4 từ chặn), `/dashboard` streak+chart 30 ngày. Gọi API F04 qua `apiClient`.
+  - **Google OAuth** chưa bật (Homeowner: Blueprint §10.2, redirect `https://ealcahjaftwrllbudkyr.supabase.co/auth/v1/callback`) → cần để verify login thật + smoke test F05 trong browser (list/flashcard/quiz/dashboard end-to-end).
+  - **`OPENAI_API_KEY` trống** → F04 path gọi AI thật chờ Homeowner. Không chặn F05/F06.
+- **Recommended Next Step:** F06 — extension MV3: `manifest.json`, `background/service-worker` (SM_API proxy), `content/auth-bridge` (đọc session localStorage web), popup login/logout, lib chỉ chứa anon key. `./init.sh extension` + grep 0 secret. Chờ Chủ thầu giao TIP-F06.
 
 ## Feature board (nguồn: feature_list.json)
 | ID | Feature | Deps | Status |
@@ -19,13 +19,27 @@
 | F02 | Supabase migrations + RLS + RPC | F01 | done ✓ |
 | F03 | Web auth (Google + AuthGuard + /api/me) | F01,F02 | done ✓ (login chờ Homeowner OAuth) |
 | F04 | API core (vocab + lookup AI + dashboard) | F03 | done ✓ (AI-call path chờ Homeowner OPENAI key) |
-| F05 | Web pages (tu-vung/flashcard/quiz/dashboard) | F04 | pending ◀ active |
-| F06 | Extension scaffold (MV3 + auth-bridge + popup) | F04 | pending |
+| F05 | Web pages (tu-vung/flashcard/quiz/dashboard) | F04 | done ✓ (browser end-to-end chờ Homeowner OAuth) |
+| F06 | Extension scaffold (MV3 + auth-bridge + popup) | F04 | pending ◀ active |
 | F07 | Extension subtitles (intercept + overlay) | F06 | pending |
 | F08 | Extension click-word (lookup + save + settings) | F07 | pending |
 | F09 | SHIP + verify tổng + handover | F05,F08 | pending |
 
 ## Nhật ký (mới nhất trên cùng)
+### 2026-07-06 — F05 Web pages (DONE) [Chủ thầu giao TIP → Thợ làm inline]
+- TIP: `.claude/tips/TIP-F05-web-pages.md`. Thực thi **inline tuần tự** (không parallel-build): 4 trang nhỏ + chia sẻ type/QuizGame → cohesion UI + tiết kiệm token.
+- Files (web): shared `lib/article.ts` (type Vocab + articleColor der=blue/die=pink/das=green/null=gray), `components/ui/{Button,Card,Badge,Spinner}.tsx`, `components/Header.tsx` (nav active + email + Đăng xuất); trang `app/tu-vung/page.tsx`, `app/hoc-tu-vung/page.tsx`, `components/QuizGame.tsx` (dùng chung, prop direction), `app/kiem-tra-duc-viet/page.tsx` + `app/kiem-tra-viet-duc/page.tsx`, thay `app/dashboard/page.tsx` (streak+3 stat+chart div thuần).
+- Kiến trúc giữ đúng: không thêm dep (chart div/SVG thuần), articleColor, distractor = random từ vocab (không AI), flashcard lật → mark-learned, render as text (không innerHTML).
+- **Bằng chứng runtime (`next start` :3124 + user test service_role rồi xoá):**
+  - `./init.sh web` VERIFY OK — **0 ESLint warning/error** (đã bỏ `round` useMemo hack → giữ `questions` ở state), build 16 route (5 trang F05 static).
+  - 5 trang serve **200** + shell AuthGuard "Đang tải…" (AuthGuard bọc mọi trang; chưa login → redirect client).
+  - Data-contract khớp trang: seed 3 từ → quizPool 3 → **quiz BLOCKED (<4)**; seed 5 → **quiz RUNS (≥4)**, order newest-first.
+  - `buildQuiz` (test trên pool thật): 5 câu, mỗi câu **4 option, chứa đáp án đúng, unique, distractor từ vocab**.
+  - Flashcard: mark-learned 1 từ → `learned_at` set. Dashboard: total_words=5, learned=1, streak=1, chart[30], đủ 5 khoá. tu-vung DELETE → biến mất, count giảm.
+  - Security greps: 0 `innerHTML`, không gọi supabase trực tiếp ở trang (chỉ Header `signOut`), chỉ `apiFetch`, `package.json` không đổi (0 dep mới).
+- **Chờ Homeowner:** smoke test browser end-to-end (login Google → list/flashcard/quiz/dashboard hiển thị) cần bật OAuth. Logic + data-path đã verify qua user test.
+- **Deviations:** feature_list §F05 scope có "article tô màu der/die/das" (bài đọc mẫu) nhưng **TIP-F05 không liệt kê** → giữ đúng scope TIP (4 trang), không tự thêm. Đề xuất Chủ thầu chốt: bài đọc mẫu để F05.1 riêng hay bỏ.
+
 ### 2026-07-06 — F04 API core (DONE) [Chủ thầu giao TIP → Thợ làm]
 - TIP: `.claude/tips/TIP-F04-api-core.md`. Kiến trúc chốt: vocab/mark-learned/dashboard qua scoped-JWT (RLS); lookup-context verify user (401) rồi cache+OpenAI bằng service_role; user_id luôn từ JWT.
 - Files (web): `lib/supabaseAdmin.ts` (service_role, server-only), `lib/openai.ts` (lookupWord gpt-4o-mini, ép JSON schema, validate article, prompt-injection guard), `app/api/vocabulary/route.ts` (GET/POST idempotent/DELETE/OPTIONS), `app/api/vocabulary/mark-learned/route.ts`, `app/api/lookup-context/route.ts` (cache→AI→cache, fallback không 500), `app/api/dashboard/route.ts`.
@@ -73,6 +87,29 @@
 - Bằng chứng: N/A (chưa có code để verify).
 
 ## Verification Evidence (command and output — dán vào đây khi có)
+### F05 — runtime (2026-07-06, `next start` :3124, user test service_role → xoá)
+```
+./init.sh web -> VERIFY OK; ✔ No ESLint warnings or errors; build 16 routes
+                 (5 F05 pages static: /tu-vung /hoc-tu-vung /kiem-tra-duc-viet /kiem-tra-viet-duc /dashboard)
+
+page serve (no SSR crash):
+  /tu-vung /hoc-tu-vung /kiem-tra-duc-viet /kiem-tra-viet-duc /dashboard -> 200 + AuthGuard "Đang tải…" shell
+
+authed data-contract (JWT test user):
+  seed 3 từ -> quizPool=3 -> quiz BLOCKED (<4) = true
+  seed 5 từ -> quizPool=5 -> quiz RUNS (>=4) = true; order newest-first [Buch,laufen,Katze,Hund,Haus]
+  buildQuiz(pool5): questions=5 each4opts=true containsAnswer=true uniqueOpts=true distractorsFromVocab=true
+  flashcard flip: mark-learned "Buch" -> learned_at set = true
+  dashboard: total_words=5 total_learned=1 streak=1 chartLen=30 (đủ 5 khoá)
+  tu-vung delete -> gone=true count=4
+
+security greps:
+  dangerouslySetInnerHTML/innerHTML -> none
+  supabase.* trong trang -> chỉ Header signOut (đúng)
+  fetch trong trang -> chỉ apiFetch
+  package.json -> unchanged (0 dep mới)
+```
+
 ### F04 — runtime (2026-07-06, `next start` :3123, user test service_role → xoá)
 ```
 401 sweep (no token):
