@@ -48,25 +48,6 @@ async function fetchDe(url: string): Promise<Cue[] | null> {
   return cues.length ? cues : null;
 }
 
-const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
-
-// VI: auto-translate có thể dính anti-bot YouTube. Anti-bot theo NHỊP (rate) → retry ngay
-// lập tức vô ích; cần backoff tăng dần + tách nhịp khỏi request DE ngay trước đó.
-async function fetchVi(url: string): Promise<{ cues: Cue[]; status: "ok" | "blocked" | "empty" }> {
-  const delays = [500, 1500, 3000]; // trước mỗi lần thử (ms)
-  let sawText = false;
-  for (let i = 0; i < delays.length; i++) {
-    await sleep(delays[i]);
-    const text = await fetchText(url);
-    if (text == null) continue; // lỗi mạng → thử lại
-    sawText = true;
-    if (isAntiBot(text)) continue;
-    const cues = parseJson3(text);
-    return { cues, status: cues.length ? "ok" : "empty" };
-  }
-  return { cues: [], status: sawText ? "blocked" : "empty" };
-}
-
 async function handleTimedText(rawUrl: string): Promise<void> {
   const key = dedupeKey(rawUrl);
   if (seen.has(key)) return;
@@ -76,8 +57,8 @@ async function handleTimedText(rawUrl: string): Promise<void> {
   const de = await fetchDe(buildUrl(base));
   if (!de) return; // không có DE → im lặng, không post
 
-  const vi = await fetchVi(buildUrl(base, { tlang: "vi" }));
-  post(de, vi.cues, vi.status);
+  // BỎ YouTube tlang=vi (anti-bot flaky) → VI dịch ở server (youtube.ts gọi /api/translate-captions).
+  post(de, [], "none");
 }
 
 function post(de: Cue[], vi: Cue[], viStatus: string): void {
