@@ -60,10 +60,7 @@ async function fetchVi(url: string): Promise<{ cues: Cue[]; status: "ok" | "bloc
     const text = await fetchText(url);
     if (text == null) continue; // lỗi mạng → thử lại
     sawText = true;
-    if (isAntiBot(text)) {
-      console.log("[DL-DEBUG] VI anti-bot, attempt", i + 1, "/", delays.length);
-      continue;
-    }
+    if (isAntiBot(text)) continue;
     const cues = parseJson3(text);
     return { cues, status: cues.length ? "ok" : "empty" };
   }
