@@ -9,18 +9,17 @@
 
 ## Đang ở đâu (restart markers)
 - **Last Updated:** 2026-07-06.
-- **Current Objective / Feature active:** F09 — SHIP + verify tổng + handover. **F01–F08 DONE (toàn bộ feature code-complete).**
-- **Recommended Next Step:** F09 — (1) **README** đầy đủ: setup Supabase + apply 3 migration, bật Google OAuth (redirect `https://ealcahjaftwrllbudkyr.supabase.co/auth/v1/callback`), điền `OPENAI_API_KEY`, chạy web (`npm run dev` trong web/), build extension (`EXT_* node build.mjs --prod`) + load unpacked `extension/dist`. (2) **Handover Diataxis** (tutorial/how-to/reference/explanation). (3) Map mọi REQ Blueprint §? → feature + trạng thái verified. (4) **SHIP gate:** `./init.sh all` xanh + 0 secret. (5) MONITOR post-ship. Cân nhắc **adversarial-verify** toàn bộ + parallel-review diff cuối. Chờ Chủ thầu giao TIP-F09.
-- **⚠ Việc CHỜ HOMEOWNER (runtime thật — gate "verified" ở §9 Blueprint, không chặn code/SHIP-gate tĩnh):**
-  - Bật **Google OAuth** (Supabase dashboard) → verify: login web (F03), pages browser (F05), popup extension thấy email + auth-bridge (F06), click-từ có JWT (F08).
-  - Điền **`OPENAI_API_KEY`** (`.env` + `web/.env.local`) → lookup nghĩa thật (F08 `source:cache/openai`). Fallback (không 500) đã xong.
-  - **Load unpacked extension** (`extension/dist`) + video Đức thật → overlay 2 dòng sync (F07), click từ→pause→thẻ→Lưu→loa (F08), settings realtime (F08).
-  - Build extension: `cd extension && EXT_SUPABASE_URL=<web NEXT_PUBLIC_SUPABASE_URL> EXT_SUPABASE_ANON_KEY=<anon> EXT_APP_URL=<app url> node build.mjs --prod`.
-- **Kiến trúc tổng (cho F09 doc):** web Next15 (auth localStorage JWT + API Route Handler RLS/service_role) + Supabase (3 bảng RLS + RPC) + extension MV3 (auth-bridge đọc session web → SM_API proxy Bearer; yt-intercept MAIN bắt timedtext → overlay ISOLATED; click-từ → lookup-context). Session key `sb-ealcahjaftwrllbudkyr-auth-token`.
+- **Current Objective / Feature active:** — ✅ **MVP DONE (F01–F09). SHIP gate PASS.** Không còn feature build; chờ Homeowner nghiệm thu UI Chrome (§9 Blueprint).
+- **Recommended Next Step (Homeowner):** chạy §9 Blueprint full-flow trên Chrome để đóng "chờ-Homeowner(UI)":
+  1. `npm run dev` → login Google web → duyệt `/tu-vung` `/hoc-tu-vung` `/kiem-tra-*` `/dashboard` (F05).
+  2. Build + Load unpacked extension → popup thấy email (F06) → video Đức: overlay 2 dòng (F07) → click từ→pause→thẻ nghĩa→Lưu→loa→đóng→play (F08) → toggle/slider settings realtime (F08).
+  3. Chi tiết + troubleshooting: `README.md`; truy vết REQ + verified: `docs/HANDOVER.md`.
+  - Housekeeping: **rotate Supabase PAT** (đã lộ). Sau MVP: deploy Vercel + `EXT_APP_URL` prod + publish extension.
+- **Đã verified live (Homeowner):** Google OAuth 302; OPENAI lookup thật (Katze→die/mèo openai→cache); extension build env thật 0 secret. SHIP gate `./init.sh all` xanh; `/api/health` 200; advisors 2 intentional.
+- **Build extension:** `cd extension && EXT_SUPABASE_URL=<NEXT_PUBLIC_SUPABASE_URL> EXT_SUPABASE_ANON_KEY=<anon> EXT_APP_URL=<app url> node build.mjs --prod` → `extension/dist`.
+- **Kiến trúc tổng:** web Next15 (auth localStorage JWT + API Route Handler RLS/service_role) + Supabase (3 bảng RLS + RPC) + extension MV3 (auth-bridge đọc session web → SM_API proxy Bearer; yt-intercept MAIN bắt timedtext → overlay ISOLATED; click-từ → lookup-context). Session key `sb-ealcahjaftwrllbudkyr-auth-token`. Đầy đủ: `docs/HANDOVER.md`.
 - **API:** `GET/POST/DELETE /api/vocabulary`, `POST /api/vocabulary/mark-learned {ids}`, `POST /api/lookup-context {word,sentence}`, `GET /api/dashboard`, `GET /api/me`, `GET /api/health` (public). Bearer JWT (trừ health). CORS phản chiếu web + `chrome-extension://`.
-- **Blockers:**
-  - **`OPENAI_API_KEY` trống** → `/api/lookup-context` path gọi AI thật chờ Homeowner. Fallback không 500 đã verify. Cần cho F08 click-từ.
-  - **Google OAuth** chưa bật → smoke test browser end-to-end F05 (login → list/flashcard/quiz/dashboard) + auth-bridge F06 cần login thật. Test authed hiện dùng user tạo qua service_role.
+- **Còn lại (chỉ Homeowner, Chrome UI):** overlay F07, thẻ click F08, settings realtime F08, pages render F05. Không chặn SHIP gate tĩnh.
 - **Supabase:** project `ealcahjaftwrllbudkyr` live. `.env`/`web/.env.local` có creds. MCP đang **không** `--read-only`; PAT nên rotate (đã lộ trong chat).
 - **Files:** `web/` (Next 15 + auth F03), `extension/` (MV3 scaffold), `supabase/migrations/` (3 .sql applied). `node_modules/` cài rồi.
 

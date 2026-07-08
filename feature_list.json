@@ -130,7 +130,7 @@
       "name": "SHIP + verify tong + handover",
       "description": "Adversarial verify toan bo, security final pass, README/handover Diataxis, SHIP gate lint+typecheck+build+test all green, MONITOR post-ship.",
       "dependencies": ["F05", "F08"],
-      "status": "pending",
+      "status": "done",
       "scope": ["adversarial VERIFY (pipeline.md)", "security final pass", "README + handover (Diataxis)", "SHIP gate all green"],
       "done_when": [
         "moi REQ trong Blueprint co feature map + verified",

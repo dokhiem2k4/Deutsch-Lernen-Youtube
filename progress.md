@@ -4,13 +4,12 @@
 
 ## Current State
 - **Last Updated:** 2026-07-06.
-- **Phase:** BUILD **hoàn tất** (F01–F08 done) → active `F09` (SHIP + verify tổng + handover). Toàn bộ feature code-complete.
-- **Current Objective / Active feature:** `F09 — SHIP + verify tổng + handover (README/Diataxis, adversarial verify toàn bộ, MONITOR)`.
-- **What đã build:** F01–F05 (web MVP) + F06 (extension scaffold) + F07 (subtitles overlay) + **Click-word (F08)**: `lib/words.ts` (tokenize/cleanWord pure), `lib/settings.ts` (DEFAULT/get/set/clamp/onChanged), `lib/speak.ts` (speakDe de-DE); `content/youtube.ts` mở rộng — từ DE click được → pause + thẻ nghĩa in-page (lookup qua SM_API + Lưu + loa), click ngoài/Đóng → play (chỉ nếu ta pause), settings realtime; popup thêm "Cài đặt phụ đề" (toggle DE/VI, slider cỡ chữ/độ đậm).
-- **Blockers (đều là runtime cần Homeowner — không chặn code):**
-  - **Google OAuth** chưa bật → login thật để verify end-to-end: F03 login, F05 pages browser, F06 auth-bridge, F08 click→lưu.
-  - **`OPENAI_API_KEY` trống** → F08 nghĩa AI thật (`source:cache/openai`). Fallback (source:error, không 500) đã verify — click chưa login/lỗi không vỡ.
-- **Recommended Next Step:** F09 — README (setup Supabase/OAuth/OpenAI + apply migration + build web/extension + load unpacked), handover Diataxis, map mọi REQ Blueprint → feature + verified, SHIP gate (`./init.sh all` xanh + 0 secret), MONITOR. Nhiều phần "verified" cần Homeowner chạy flow thật (§9 Blueprint).
+- **Phase:** ✅ **MVP code-complete + SHIP gate PASS (F01–F09 done).** Còn: Homeowner nghiệm thu UI trên Chrome (§9 Blueprint).
+- **Current Objective / Active feature:** — (hết feature build; chờ Homeowner nghiệm thu UI end-to-end).
+- **What đã build:** web MVP (F01–F05) + extension đầy đủ (F06 scaffold, F07 subtitles overlay, F08 click-từ+settings+loa) + **F09 SHIP/handover**: `README.md` (setup Supabase/OAuth/OpenAI + apply migration + run + build extension + tutorial + troubleshooting), `docs/HANDOVER.md` (kiến trúc + bảng truy vết 15 REQ §1 + verified-vs-còn-lại + known limitations + next steps).
+- **Đã verified live (Homeowner, 2026-07-06):** ✅ Google OAuth (`authorize?provider=google`→302); ✅ OPENAI lookup thật (`Katze`→`{die,"mèo",noun,source:openai}`→gọi lại `source:cache`; Lưu→`/api/vocabulary` thấy); ✅ extension build env thật, 0 secret.
+- **Còn lại (chỉ Homeowner — cần Chrome + YouTube, không tự động hoá):** overlay 2 dòng trên video Đức (F07); UI thẻ click-từ + Lưu + loa (F08); settings realtime (F08); web pages sau login thật (F05). Chi tiết `docs/HANDOVER.md` §3.
+- **Recommended Next Step:** Homeowner chạy §9 Blueprint full-flow (load unpacked `extension/dist` + video Đức + login web) → chuyển "chờ-Homeowner(UI)" thành verified. Rotate Supabase PAT (đã lộ). Sau MVP: deploy (Vercel) + set `EXT_APP_URL` prod + publish extension.
 
 ## Feature board (nguồn: feature_list.json)
 | ID | Feature | Deps | Status |
@@ -22,10 +21,27 @@
 | F05 | Web pages (tu-vung/flashcard/quiz/dashboard) | F04 | done ✓ (browser end-to-end chờ Homeowner OAuth) |
 | F06 | Extension scaffold (MV3 + auth-bridge + popup) | F04 | done ✓ (login thật chờ Homeowner OAuth) |
 | F07 | Extension subtitles (intercept + overlay) | F06 | done ✓ (overlay runtime chờ Homeowner video Đức) |
-| F08 | Extension click-word (lookup + save + settings) | F07 | done ✓ (click/settings runtime chờ Homeowner OAuth+OPENAI) |
-| F09 | SHIP + verify tổng + handover | F05,F08 | pending ◀ active |
+| F08 | Extension click-word (lookup + save + settings) | F07 | done ✓ (AI verified live; UI click chờ Homeowner Chrome) |
+| F09 | SHIP + verify tổng + handover | F05,F08 | done ✓ (SHIP gate PASS; UI end-to-end chờ Homeowner §9) |
 
 ## Nhật ký (mới nhất trên cùng)
+### 2026-07-06 — F09 SHIP + verify tổng + handover (DONE) [Chủ thầu giao TIP → Thợ làm]
+- TIP: `.claude/tips/TIP-F09-ship-handover.md`. Docs Diataxis + SHIP gate + verify tổng, KHÔNG thêm feature/đổi logic.
+- Files: **NÂNG CẤP `README.md`** (overview + cây thư mục; Prerequisites; Setup từng bước Supabase keys→apply 3 migration→Google OAuth redirect `https://<ref>.supabase.co/auth/v1/callback`+URL config→OpenAI billing; bảng Env + cảnh báo secret server-only; Run; Extension build EXT_*+Load unpacked; Tutorial luồng học; Verify; Troubleshooting), **MỚI `docs/HANDOVER.md`** (kiến trúc ASCII; bảng truy vết **15 REQ** §1→Feature→Bằng chứng→Verified, 0 mục trống; verified-vs-còn-lại; known limitations; next steps).
+- **Bằng chứng SHIP gate + MONITOR:**
+  - **`./init.sh all` → VERIFY OK (all):** SCAFFOLD ok; WEB lint 0 warning + build ✓; EXTENSION build PROD; SECRET **0 secret trong dist** (bỏ *.map).
+  - **MONITOR:** `/api/health` → **200 `{"status":"ok"}`** (server thật). Advisors(security): **2 mục intentional** (rls_no_policy trên ai_meaning_cache; authenticated execute get_dashboard) — tham chiếu F02 (MCP token không nạp phiên này). 0 P0 mới.
+  - **Không hồi quy:** web lint/typecheck/build xanh trong init.sh all (F01–F08 nguyên vẹn).
+  - **REQ traceability:** 15 REQ (R1–R15) map đủ IN §1, mỗi mục có Feature+Bằng chứng+Verified, **0 trống**. server-verified: R7–R14 + logic R2/R4/R5/R15; Homeowner-live: R1/R3/R6/R11 (OAuth 302 + Katze openai→cache); chờ-Homeowner(UI): overlay F07 + thẻ click F08 + pages F05 render.
+  - README self-review: script `dev`/`build:ext` tồn tại; 3 migration đúng thứ tự tên; **0 giá trị secret thật** trong docs (chỉ tên biến + placeholder `<REF>`).
+- **Deviations:** MCP Supabase token không nạp phiên F09 → advisors dẫn kết quả F02 (không re-query live). Không sửa code sản phẩm (verify tổng không lộ bug mới).
+- **Kết:** ✅ **BUILD MVP hoàn tất (F01–F09).** SHIP gate PASS. Còn nghiệm thu UI Chrome = Homeowner (§9 Blueprint).
+
+### 2026-07-06 — Homeowner setup verified (OAuth + OPENAI) [server-side live]
+- Google OAuth bật (Google Cloud client + Supabase provider + URL config) → verified `authorize` 302 → Google.
+- OPENAI_API_KEY: key đầu hết quota (429 insufficient_quota → fallback source:error, không 500 — invariant giữ). Key mới có credit → lookup-context thật: Haus→das/nhà, Katze→die/mèo; `source:openai` → gọi lại `source:cache`; Lưu → web thấy. Chuyển F04 AI-path + F08 lookup từ "chờ Homeowner" → verified (server-side).
+- Extension rebuild với env thật (anon+URL public baked, 0 secret). Còn lại: overlay/click UI trên Chrome+YouTube = Homeowner tự nghiệm thu.
+
 ### 2026-07-06 — F08 Click-word + settings (DONE) [Chủ thầu giao TIP → Thợ làm → VERIFY bắt 1 bug]
 - TIP: `.claude/tips/TIP-F08-click-word.md`. Kiến trúc chốt: thẻ nghĩa **in-page** (youtube.ts render trong #movie_player, KHÔNG action-popup); lookup qua **SM_API** (không gọi API trực tiếp); pause khi click từ, play khi đóng/click-ngoài **chỉ nếu ta chủ động pause**; settings `chrome.storage.local` realtime; render as text.
 - **VERIFY (adversarial-verify 17 agent): 1 finding confidence HIGH (2 agent độc lập xác nhận, judge-confirmed):** `pausedByUs` stale — click từ (pause, cờ=true) → thẻ mở → user Space▶ (play; keydown không đóng thẻ, cờ vẫn true) → Space⏸ (user tự pause) → Đóng → `closeCard` ép `play()` video user cố tình dừng. Vi phạm "không tự play nếu user đã pause".
@@ -131,6 +147,25 @@
 - Bằng chứng: N/A (chưa có code để verify).
 
 ## Verification Evidence (command and output — dán vào đây khi có)
+### F09 — SHIP gate + MONITOR (2026-07-06)
+```
+./init.sh all:
+  ==> SCAFFOLD: root package.json OK
+  ==> WEB: ✔ No ESLint warnings or errors; ✓ Compiled successfully
+  ==> EXTENSION: build PROD (= artifact ship) -> dist/
+  ==> SECRET LEAK: OK 0 secret trong dist (artifact ship, bỏ *.map)
+  VERIFY OK (all)
+
+MONITOR:
+  GET /api/health -> 200 {"status":"ok"}
+  Supabase advisors(security) -> 2 mục intentional (F02): rls_enabled_no_policy(ai_meaning_cache),
+    authenticated-execute get_dashboard. 0 P0 mới. [MCP token không nạp phiên này → dẫn F02]
+
+REQ traceability (docs/HANDOVER.md §2): 15 REQ (R1–R15), map đủ IN §1, 0 mục trống.
+docs self-review: npm run dev/build:ext OK; 3 migration đúng thứ tự; 0 giá trị secret thật trong docs.
+```
+
+
 ### F08 — unit (words+settings) + build/secret + SM_API contract (2026-07-06)
 ```
 esbuild bundle words.ts + settings.ts → node → 17 passed, 0 failed:
