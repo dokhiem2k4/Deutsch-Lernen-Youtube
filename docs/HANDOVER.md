@@ -82,7 +82,8 @@ Cách kiểm ở [`../README.md`](../README.md) §Verify + §Troubleshooting.
 - **Từ điển nhúng:** không có — nghĩa hoàn toàn từ AI (D-2); phụ thuộc OpenAI + quota.
 - **VI = YouTube auto-translate** (`tlang=vi`) — chất lượng dịch máy; có thể dính anti-bot Google (đã xử lý: retry 1 lần → `blocked`, chỉ hiện DE).
 - **Supabase advisors:** 2 mục security *intentional* — `rls_enabled_no_policy` trên `ai_meaning_cache` (chỉ service_role đọc/ghi, đúng chủ đích) + `authenticated execute` RPC `get_dashboard` (thiết kế RPC SECURITY DEFINER). 0 P0.
-- **PAT/secret:** Supabase PAT từng lộ trong chat → nên rotate. MCP token không nạp phiên F09 (advisors tham chiếu kết quả F02).
+- **Advisors (re-verify live F09):** query Management API trực tiếp → **2 lint intentional, 0 P0 (ERROR)** — đúng trạng thái đã ghi. (MCP token chưa nạp phiên này nên dùng curl PAT thay MCP tool.)
+- **PAT/secret:** Supabase PAT từng lộ trong chat → nên rotate.
 
 ## 5. Next steps
 
