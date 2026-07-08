@@ -48,16 +48,26 @@ async function fetchDe(url: string): Promise<Cue[] | null> {
   return cues.length ? cues : null;
 }
 
-// VI: auto-translate có thể dính anti-bot → retry 1 lần → vẫn dính = blocked.
+const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
+
+// VI: auto-translate có thể dính anti-bot YouTube. Anti-bot theo NHỊP (rate) → retry ngay
+// lập tức vô ích; cần backoff tăng dần + tách nhịp khỏi request DE ngay trước đó.
 async function fetchVi(url: string): Promise<{ cues: Cue[]; status: "ok" | "blocked" | "empty" }> {
-  let text = await fetchText(url);
-  if (text != null && isAntiBot(text)) {
-    text = await fetchText(url); // retry 1 lần
-    if (text != null && isAntiBot(text)) return { cues: [], status: "blocked" };
+  const delays = [500, 1500, 3000]; // trước mỗi lần thử (ms)
+  let sawText = false;
+  for (let i = 0; i < delays.length; i++) {
+    await sleep(delays[i]);
+    const text = await fetchText(url);
+    if (text == null) continue; // lỗi mạng → thử lại
+    sawText = true;
+    if (isAntiBot(text)) {
+      console.log("[DL-DEBUG] VI anti-bot, attempt", i + 1, "/", delays.length);
+      continue;
+    }
+    const cues = parseJson3(text);
+    return { cues, status: cues.length ? "ok" : "empty" };
   }
-  if (text == null || isAntiBot(text)) return { cues: [], status: "blocked" };
-  const cues = parseJson3(text);
-  return { cues, status: cues.length ? "ok" : "empty" };
+  return { cues: [], status: sawText ? "blocked" : "empty" };
 }
 
 async function handleTimedText(rawUrl: string): Promise<void> {

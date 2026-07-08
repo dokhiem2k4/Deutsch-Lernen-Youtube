@@ -25,6 +25,13 @@
 | F09 | SHIP + verify tổng + handover | F05,F08 | done ✓ (SHIP gate PASS; UI end-to-end chờ Homeowner §9) |
 
 ## Nhật ký (mới nhất trên cùng)
+### 2026-07-06 — F10 Server caption translate DE→VI + cache (DONE) [Homeowner duyệt B]
+- **Lý do:** YouTube `tlang=vi` bị anti-bot flaky (F07 hiện nhãn "bản dịch bị chặn"). Hybrid: DE cues (ổn) → thử YouTube tlang (backoff 0.5/1.5/3s, F07 fix) → blocked/empty → server dịch OpenAI + cache theo video.
+- Files: migration `caption_translation_cache` (RLS no-policy), `web/lib/translate.ts` (gpt-4o-mini, **chunk 50 + pool 2 + retry**, prompt-injection ép JSON + validate length), `web/app/api/translate-captions/route.ts` (auth 401, cache service_role, fallback không 500, maxDuration 60), `extension/src/content/youtube.ts` (requestTranslation qua SM_API, guard 1-lần/video), `yt-intercept.ts` (VI retry backoff).
+- **Bằng chứng runtime (server thật):** 401 không token; "Das Haus ist groß."→"Ngôi nhà thì lớn." source:openai → cache; thiếu cues→400; **120 dòng (buộc chunk) → 120/120 cues đủ text, source:openai, 14s** → cache.
+- **VERIFY (adversarial-verify 15 agent): 1 finding HIGH** — dịch cả video dài trong 1 call → vượt token cap/timeout → truncate → error, không cache (chỉ chạy clip ngắn). **Đã vá:** chunk 50 dòng + pool 2 + retry 1 lần; re-test 120 dòng PASS. (Lần fail đầu do dev server chưa hot-reload.)
+- **Chờ Homeowner:** VI hiện trên video Đức thật khi YouTube chặn (extension runtime). Migration applied live.
+
 ### 2026-07-06 — F09 SHIP + verify tổng + handover (DONE) [Chủ thầu giao TIP → Thợ làm]
 - TIP: `.claude/tips/TIP-F09-ship-handover.md`. Docs Diataxis + SHIP gate + verify tổng, KHÔNG thêm feature/đổi logic.
 - Files: **NÂNG CẤP `README.md`** (overview + cây thư mục; Prerequisites; Setup từng bước Supabase keys→apply 3 migration→Google OAuth redirect `https://<ref>.supabase.co/auth/v1/callback`+URL config→OpenAI billing; bảng Env + cảnh báo secret server-only; Run; Extension build EXT_*+Load unpacked; Tutorial luồng học; Verify; Troubleshooting), **MỚI `docs/HANDOVER.md`** (kiến trúc ASCII; bảng truy vết **15 REQ** §1→Feature→Bằng chứng→Verified, 0 mục trống; verified-vs-còn-lại; known limitations; next steps).
